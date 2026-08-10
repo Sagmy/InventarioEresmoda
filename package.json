@@ -1,0 +1,50 @@
+{
+  "name": "inventarioeresmoda",
+  "version": "1.0.0",
+  "description": "Inventario, ventas, apartados y créditos para tienda de ropa",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "db:push": "supabase db push",
+    "db:types": "supabase gen types typescript --linked --schema public > src/types/database.generated.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sagmy/InventarioEresmoda.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Sagmy/InventarioEresmoda/issues"
+  },
+  "homepage": "https://github.com/Sagmy/InventarioEresmoda#readme",
+  "dependencies": {
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.2",
+    "@tanstack/react-query": "^5.101.4",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.31.0",
+    "next": "^16.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.0",
+    "supabase": "^2.113.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3"
+  }
+}

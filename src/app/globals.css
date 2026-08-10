@@ -1,0 +1,87 @@
+@import 'tailwindcss';
+
+/* ==========================================================================
+   Tokens de diseño
+   ========================================================================== */
+@theme {
+  --color-lienzo: oklch(98.4% 0.003 250);
+  --color-superficie: oklch(100% 0 0);
+  --color-borde: oklch(92% 0.006 250);
+  --color-borde-fuerte: oklch(85% 0.008 250);
+
+  --color-tinta: oklch(21% 0.015 255);
+  --color-tinta-suave: oklch(48% 0.012 255);
+  --color-tinta-tenue: oklch(62% 0.01 255);
+
+  --color-marca: oklch(52% 0.16 285);
+  --color-marca-suave: oklch(96% 0.02 285);
+  --color-marca-fuerte: oklch(44% 0.17 285);
+
+  /* Semáforo del panel de cobros y estados de pago */
+  --color-verde: oklch(56% 0.14 155);
+  --color-verde-suave: oklch(96% 0.03 155);
+  --color-ambar: oklch(70% 0.15 75);
+  --color-ambar-suave: oklch(96% 0.05 85);
+  --color-rojo: oklch(56% 0.19 25);
+  --color-rojo-suave: oklch(96% 0.03 25);
+
+  --radius-caja: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-lienzo: oklch(17% 0.012 260);
+    --color-superficie: oklch(21% 0.014 260);
+    --color-borde: oklch(29% 0.014 260);
+    --color-borde-fuerte: oklch(38% 0.016 260);
+
+    --color-tinta: oklch(96% 0.005 260);
+    --color-tinta-suave: oklch(75% 0.012 260);
+    --color-tinta-tenue: oklch(60% 0.012 260);
+
+    --color-marca: oklch(72% 0.14 285);
+    --color-marca-suave: oklch(28% 0.05 285);
+    --color-marca-fuerte: oklch(80% 0.13 285);
+
+    --color-verde: oklch(72% 0.15 155);
+    --color-verde-suave: oklch(27% 0.05 155);
+    --color-ambar: oklch(80% 0.14 80);
+    --color-ambar-suave: oklch(29% 0.06 80);
+    --color-rojo: oklch(70% 0.17 25);
+    --color-rojo-suave: oklch(28% 0.07 25);
+  }
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background-color: var(--color-lienzo);
+  color: var(--color-tinta);
+  -webkit-font-smoothing: antialiased;
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+/* Las cifras de dinero en tabla se leen mucho mejor alineadas en columna. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* En el mostrador se usa el celular con el dedo: nada por debajo de 44px. */
+@media (pointer: coarse) {
+  button,
+  a[role='button'],
+  [type='submit'] {
+    min-height: 44px;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-marca);
+  outline-offset: 2px;
+}

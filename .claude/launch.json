@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "eresmoda",
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=\"$HOME/.local/node/bin:$PATH\"; exec node node_modules/next/dist/bin/next dev -p 3100"
+      ],
+      "port": 3100
+    }
+  ]
+}
