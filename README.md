@@ -131,21 +131,48 @@ npm run db:types
 npm run dev
 ```
 
-Abre `http://localhost:3000`. **La primera cuenta que crees queda como
-administrador.** Las siguientes entran como vendedor e inactivas, hasta que un
-administrador las habilite desde Ajustes.
+Abre `http://localhost:3000`.
+
+---
+
+## Cuentas de usuario
+
+**No hay registro público.** La pantalla de inicio solo permite entrar; quien no
+tenga cuenta no puede crearse una. Las da de alta el administrador desde
+**Ajustes → Equipo → Nuevo usuario**, con una contraseña temporal que le entrega
+a la persona.
+
+Para que eso funcione hace falta la llave de administración de Supabase en
+`.env.local`:
+
+```
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+Está en **Project Settings → API Keys → service_role**. Es la única parte del
+sistema que la usa, y con tres barreras: la variable no lleva el prefijo
+`NEXT_PUBLIC_` (así Next no la incrusta en el navegador), el módulo que la lee
+empieza con `import 'server-only'` (si un componente de cliente lo importara, la
+compilación falla), y la acción comprueba que quien llama es admin antes de
+tocarla.
+
+**La primera cuenta del sistema** es la excepción: como todavía no hay ningún
+administrador que pueda crearla, se da de alta desde
+**Supabase → Authentication → Add user** y el trigger de la base la marca como
+administradora por ser la primera.
 
 ---
 
 ## Seguridad: revisa esto antes de usarlo en la tienda
 
-- [ ] En **Supabase → Authentication → Providers**, desactiva el registro público
-      (*Allow new users to sign up*) una vez creadas las cuentas del equipo. La
-      app ya deja inactivas las cuentas nuevas, pero cerrar la puerta es mejor
-      que vigilarla.
+- [ ] En **Supabase → Authentication → Sign In / Providers → Email**, desactiva
+      *Allow new users to sign up*. Quitar el formulario de la app no basta:
+      sin esto, cualquiera podría llamar a la API de Supabase directamente.
 - [ ] Verifica que `.env.local` **no** esté en el repositorio (`git status`).
 - [ ] Confirma que en **Ajustes** la zona horaria sea la de la tienda: define a
       qué hora cierra el día y, mal puesta, descuadra todos los totales diarios.
+- [ ] Si alguna vez se filtra la `service_role`, revócala en el panel de Supabase
+      y genera una nueva. Es la llave que abre todo.
 
 ---
 

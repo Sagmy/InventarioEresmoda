@@ -562,6 +562,10 @@ export type Database = {
         Returns: TopProduct[];
       };
       dashboard_summary: { Args: Record<string, never>; Returns: DashboardSummary };
+      /** Helpers de rol. Se usan para cerrar la puerta antes de operaciones sensibles. */
+      is_admin: { Args: Record<string, never>; Returns: boolean };
+      is_staff: { Args: Record<string, never>; Returns: boolean };
+      auth_role: { Args: Record<string, never>; Returns: UserRole };
     };
     Enums: {
       user_role: UserRole;

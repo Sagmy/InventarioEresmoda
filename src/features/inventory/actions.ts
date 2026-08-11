@@ -1,5 +1,9 @@
 'use server';
 
+// Ojo: un archivo con 'use server' SOLO puede exportar funciones async. Los
+// esquemas de Zod de abajo se quedan sin 'export' a propósito: exportarlos
+// rompe la página entera en tiempo de ejecución, no en compilación.
+
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
@@ -14,7 +18,7 @@ const variante = z.object({
   qty: z.number().int().nonnegative().default(0),
 });
 
-export const crearProducto = z.object({
+const crearProducto = z.object({
   name: z.string().trim().min(1, 'El producto necesita un nombre.').max(160),
   description: z.string().trim().max(2000).optional(),
   brand: z.string().trim().max(80).optional(),
@@ -22,20 +26,20 @@ export const crearProducto = z.object({
   variants: z.array(variante).min(1, 'Agrega al menos una talla o color.'),
 });
 
-export const entradaMercancia = z.object({
+const entradaMercancia = z.object({
   variant_id: z.string().uuid(),
   qty: z.number().int().positive('La cantidad debe ser mayor que cero.'),
   unit_cost_cents: z.number().int().nonnegative().nullable().default(null),
   note: z.string().trim().max(500).optional(),
 });
 
-export const ajusteInventario = z.object({
+const ajusteInventario = z.object({
   variant_id: z.string().uuid(),
   delta: z.number().int().refine((n) => n !== 0, 'El ajuste debe ser distinto de cero.'),
   note: z.string().trim().min(3, 'Todo ajuste necesita una nota que lo explique.').max(500),
 });
 
-export const editarVariante = z.object({
+const editarVariante = z.object({
   id: z.string().uuid(),
   size: z.string().trim().max(30).optional(),
   color: z.string().trim().max(40).optional(),

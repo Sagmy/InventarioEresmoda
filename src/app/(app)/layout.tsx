@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentProfile } from '@/lib/auth';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
@@ -35,12 +36,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <span className="font-bold tracking-tight text-tinta">Eresmoda</span>
 
         <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-tinta-suave sm:inline">
-            {profile.full_name}
+          <Link
+            href="/cuenta"
+            title="Mi cuenta"
+            className="text-sm text-tinta-suave transition-colors hover:text-tinta"
+          >
+            <span className="hidden sm:inline">{profile.full_name}</span>
             <span className="ml-2 rounded bg-lienzo px-1.5 py-0.5 text-xs text-tinta-tenue">
               {isAdmin ? 'admin' : 'vendedor'}
             </span>
-          </span>
+          </Link>
 
           <form action={signOut}>
             <Button type="submit" variant="ghost" size="sm">

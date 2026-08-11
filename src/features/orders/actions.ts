@@ -1,5 +1,9 @@
 'use server';
 
+// Ojo: un archivo con 'use server' SOLO puede exportar funciones async. Los
+// esquemas de Zod de abajo se quedan sin 'export' a propósito: exportarlos
+// rompe la página entera en tiempo de ejecución, no en compilación.
+
 import { revalidatePath } from 'next/cache';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { fail, ok, toUserMessage, type ActionResult } from '@/lib/actions';

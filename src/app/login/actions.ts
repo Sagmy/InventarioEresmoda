@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { fail, ok, type ActionResult } from '@/lib/actions';
+import { fail, type ActionResult } from '@/lib/actions';
 
 /** Resultado de las acciones de acceso: error, o un aviso informativo. */
 export type AuthResult = ActionResult<{ notice: string } | null>;
@@ -12,10 +12,6 @@ export type AuthResult = ActionResult<{ notice: string } | null>;
 const credenciales = z.object({
   email: z.string().trim().toLowerCase().email('Escribe un correo válido.'),
   password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres.'),
-});
-
-const registro = credenciales.extend({
-  fullName: z.string().trim().min(2, 'Escribe tu nombre.').max(120),
 });
 
 /**
@@ -69,49 +65,18 @@ export async function signIn(
   redirect(destinoSeguro(formData.get('next') as string | null));
 }
 
-export async function signUp(
-  _prev: AuthResult | null,
-  formData: FormData,
-): Promise<AuthResult> {
-  const parsed = registro.safeParse({
-    email: formData.get('email'),
-    password: formData.get('password'),
-    fullName: formData.get('fullName'),
-  });
-
-  if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');
-  }
-
-  const supabase = await getSupabaseServerClient();
-  const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    options: { data: { full_name: parsed.data.fullName } },
-  });
-
-  if (error) {
-    return fail(
-      error.message.includes('already registered')
-        ? 'Ya existe una cuenta con ese correo.'
-        : 'No se pudo crear la cuenta. Intenta de nuevo.',
-    );
-  }
-
-  // Si el proyecto exige confirmar el correo, Supabase crea el usuario pero no
-  // devuelve sesión. Redirigir aquí mandaría al usuario al inicio, el middleware
-  // lo devolvería al login, y se quedaría dando vueltas sin entender por qué.
-  if (!data.session) {
-    return ok({
-      notice:
-        'Cuenta creada. Te enviamos un correo de confirmación: ábrelo y luego ' +
-        'vuelve aquí a iniciar sesión. Si no llega, revisa la carpeta de spam.',
-    });
-  }
-
-  revalidatePath('/', 'layout');
-  redirect('/');
-}
+/*
+ * Aquí vivía `signUp`. Se eliminó a propósito.
+ *
+ * La tienda no admite registro público: las cuentas las crea el administrador
+ * desde Ajustes → Equipo, con una contraseña temporal que le entrega en mano a
+ * la persona. Así nadie que dé con la dirección de la aplicación puede darse de
+ * alta, ni siquiera para quedarse esperando aprobación.
+ *
+ * Quitar el formulario no basta por sí solo: hay que cerrar también el registro
+ * en Supabase (Authentication → Sign In / Providers → Email → "Allow new users
+ * to sign up"), porque cualquiera podría llamar a esa API sin pasar por aquí.
+ */
 
 export async function signOut(): Promise<never> {
   const supabase = await getSupabaseServerClient();

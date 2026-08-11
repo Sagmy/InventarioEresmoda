@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/auth';
 import { Card, CardHeader } from '@/components/ui/surfaces';
 import { FormularioAjustes } from './formulario';
 import { GestionUsuarios } from './usuarios';
+import { NuevoUsuario } from './nuevo-usuario';
 import type { Profile, Settings } from '@/types/database';
 
 export default async function AjustesPage() {
@@ -29,7 +30,8 @@ export default async function AjustesPage() {
       <Card>
         <CardHeader
           title="Equipo"
-          subtitle="Las cuentas nuevas entran inactivas hasta que las habilites"
+          subtitle="El registro público está cerrado: las cuentas solo las creas tú"
+          action={<NuevoUsuario />}
         />
         <GestionUsuarios usuarios={(usuarios ?? []) as Profile[]} miId={yo.id} />
       </Card>
