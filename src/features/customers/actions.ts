@@ -17,6 +17,50 @@ const guardarCliente = z.object({
   notes: z.string().trim().max(2000).optional(),
 });
 
+/**
+ * Desactivar esconde al cliente sin tocar su historial. La base rechaza la
+ * operación si todavía tiene apartados o créditos abiertos: desaparecería del
+ * panel de cobros con la deuda viva.
+ */
+export async function desactivarClienteAction(
+  id: string,
+  activo: boolean,
+): Promise<ActionResult> {
+  const parsed = z.string().uuid().safeParse(id);
+  if (!parsed.success) return fail('Cliente no válido.');
+
+  const supabase = await getSupabaseServerClient();
+
+  const { error } = await supabase.rpc('set_customer_active', {
+    p_id: parsed.data,
+    p_active: activo,
+  });
+
+  if (error) return fail(toUserMessage(error));
+
+  revalidatePath('/clientes');
+  return ok();
+}
+
+/**
+ * Borrado definitivo. Solo funciona con clientes que nunca tuvieron una
+ * transacción: sirve para limpiar duplicados y errores de tecleo, no para
+ * deshacerse de un historial de ventas.
+ */
+export async function eliminarClienteAction(id: string): Promise<ActionResult> {
+  const parsed = z.string().uuid().safeParse(id);
+  if (!parsed.success) return fail('Cliente no válido.');
+
+  const supabase = await getSupabaseServerClient();
+
+  const { error } = await supabase.rpc('delete_customer', { p_id: parsed.data });
+
+  if (error) return fail(toUserMessage(error));
+
+  revalidatePath('/clientes');
+  return ok();
+}
+
 export async function guardarClienteAction(input: unknown): Promise<ActionResult<string>> {
   const parsed = guardarCliente.safeParse(input);
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');

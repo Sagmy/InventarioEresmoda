@@ -2,19 +2,28 @@ import Link from 'next/link';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { requireProfile } from '@/lib/auth';
 import { formatMoney } from '@/lib/money';
+import { cn } from '@/lib/utils';
 import { Card, EmptyState } from '@/components/ui/surfaces';
 import { NuevoCliente } from './nuevo-cliente';
+import { AccionesCliente } from './acciones-cliente';
 import type { Customer, CollectionRow } from '@/types/database';
 
-export default async function ClientesPage() {
-  await requireProfile();
+export default async function ClientesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ver?: string }>;
+}) {
+  const profile = await requireProfile();
+  const { ver } = await searchParams;
+  const verInactivos = ver === 'inactivos';
+
   const supabase = await getSupabaseServerClient();
 
   const [{ data: clientes }, { data: deudas }] = await Promise.all([
     supabase
       .from('customers')
       .select('*')
-      .eq('is_active', true)
+      .eq('is_active', !verInactivos)
       .order('full_name')
       .limit(500),
     supabase.from('v_collections_due').select('customer_id, balance_cents, type'),
@@ -39,18 +48,32 @@ export default async function ClientesPage() {
         <div>
           <h1 className="text-xl font-bold tracking-tight text-tinta">Clientes</h1>
           <p className="text-sm text-tinta-suave">
-            {lista.length} {lista.length === 1 ? 'registrado' : 'registrados'}
+            {lista.length} {verInactivos ? 'inactivo' : 'activo'}
+            {lista.length === 1 ? '' : 's'}
           </p>
         </div>
 
         <NuevoCliente />
       </div>
 
+      <div className="flex gap-2">
+        <Filtro href="/clientes" activo={!verInactivos}>
+          Activos
+        </Filtro>
+        <Filtro href="/clientes?ver=inactivos" activo={verInactivos}>
+          Inactivos
+        </Filtro>
+      </div>
+
       {lista.length === 0 ? (
         <Card>
           <EmptyState
-            title="Todavía sin clientes"
-            description="Los clientes hacen falta para apartados y créditos: sin ellos no se sabe a quién cobrarle."
+            title={verInactivos ? 'Ningún cliente inactivo' : 'Todavía sin clientes'}
+            description={
+              verInactivos
+                ? 'Aquí aparecen los que desactives. Su historial de compras se conserva.'
+                : 'Los clientes hacen falta para apartados y créditos: sin ellos no se sabe a quién cobrarle.'
+            }
           />
         </Card>
       ) : (
@@ -59,9 +82,14 @@ export default async function ClientesPage() {
             const saldo = saldoPorCliente.get(c.id) ?? 0;
 
             return (
-              <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-tinta">{c.full_name}</p>
+              <div key={c.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-tinta">
+                    {c.full_name}
+                    {!c.is_active ? (
+                      <span className="ml-2 text-xs font-normal text-tinta-tenue">inactivo</span>
+                    ) : null}
+                  </p>
                   <p className="text-sm text-tinta-suave">
                     {c.phone ?? 'Sin teléfono'}
                     {c.document_id ? ` · ${c.document_id}` : ''}
@@ -78,6 +106,12 @@ export default async function ClientesPage() {
                 ) : (
                   <span className="shrink-0 text-xs text-tinta-tenue">al día</span>
                 )}
+
+                <AccionesCliente
+                  cliente={c}
+                  esAdmin={profile.role === 'admin'}
+                  tieneDeuda={saldo > 0}
+                />
               </div>
             );
           })}
@@ -92,5 +126,29 @@ export default async function ClientesPage() {
         .
       </p>
     </div>
+  );
+}
+
+function Filtro({
+  href,
+  activo,
+  children,
+}: {
+  href: string;
+  activo: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+        activo
+          ? 'border-marca bg-marca-suave text-marca'
+          : 'border-borde text-tinta-suave hover:border-borde-fuerte',
+      )}
+    >
+      {children}
+    </Link>
   );
 }

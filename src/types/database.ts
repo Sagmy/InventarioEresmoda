@@ -56,6 +56,8 @@ type ReadOnly<Row> = { Row: Row; Insert: never; Update: never; Relationships: []
 export type Profile = {
   id: string;
   full_name: string;
+  /** Copiado desde auth.users por un trigger. Solo lo ven la propia persona y los admins. */
+  email: string | null;
   role: UserRole;
   is_active: boolean;
   created_at: string;
@@ -519,6 +521,8 @@ export type Database = {
         Returns: undefined;
       };
       upsert_category: { Args: { p_name: string; p_id?: string | null }; Returns: string };
+      set_customer_active: { Args: { p_id: string; p_active: boolean }; Returns: undefined };
+      delete_customer: { Args: { p_id: string }; Returns: undefined };
       upsert_customer: {
         Args: {
           p_full_name: string;
