@@ -72,6 +72,38 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ==========================================================================
+   Contenido sobre una foto de fondo
+   ==========================================================================
+   La pantalla de acceso lleva una fotografía detrás, así que su tarjeta se fija
+   en oscuro pase lo que pase con el tema del sistema: en modo claro, un
+   formulario claro sobre una foto oscura sería ilegible.
+
+   En vez de duplicar los componentes con variantes, se redefinen aquí las
+   variables de color solo dentro de este contenedor. Todo lo que haya dentro
+   —campos, etiquetas, avisos— se adapta sin tocar su código. */
+.sobre-foto {
+  --color-superficie: oklch(100% 0 0 / 8%);
+  --color-lienzo: oklch(100% 0 0 / 5%);
+  --color-borde: oklch(100% 0 0 / 18%);
+  --color-borde-fuerte: oklch(100% 0 0 / 28%);
+
+  --color-tinta: oklch(98% 0 0);
+  --color-tinta-suave: oklch(88% 0 0 / 85%);
+  --color-tinta-tenue: oklch(80% 0 0 / 65%);
+
+  --color-marca: oklch(78% 0.13 285);
+  --color-marca-suave: oklch(50% 0.1 285 / 35%);
+  --color-marca-fuerte: oklch(85% 0.12 285);
+
+  --color-rojo: oklch(78% 0.15 25);
+  --color-rojo-suave: oklch(45% 0.14 25 / 40%);
+  --color-ambar: oklch(85% 0.13 80);
+  --color-ambar-suave: oklch(50% 0.11 80 / 35%);
+  --color-verde: oklch(80% 0.14 155);
+  --color-verde-suave: oklch(45% 0.12 155 / 35%);
+}
+
 /* En el mostrador se usa el celular con el dedo: nada por debajo de 44px. */
 @media (pointer: coarse) {
   button,
