@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Minus, Plus, Search, Trash2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,15 @@ interface Linea {
   qty: number;
   /** Precio efectivo en centavos. Solo editable en ventas de promoción. */
   priceCents: number;
+  /**
+   * Lo que el usuario tiene escrito en el campo, tal cual.
+   *
+   * Se guarda aparte de `priceCents` a propósito. Si el campo mostrara
+   * `priceCents/100` formateado, cada tecla reescribiría el contenido: al
+   * teclear "1" aparecería "1.00", el cursor saltaría al final y la siguiente
+   * cifra se pegaría al decimal. Escribir un precio se volvía imposible.
+   */
+  priceText: string;
 }
 
 interface FilaPago {
@@ -124,7 +134,15 @@ export function PuntoDeVenta({
         );
       }
 
-      return [...prev, { variant, qty: 1, priceCents: variant.price_cents }];
+      return [
+        ...prev,
+        {
+          variant,
+          qty: 1,
+          priceCents: variant.price_cents,
+          priceText: (variant.price_cents / 100).toFixed(2),
+        },
+      ];
     });
 
     setBusqueda('');
@@ -150,12 +168,31 @@ export function PuntoDeVenta({
     );
   }
 
+  /**
+   * Guarda siempre lo tecleado y, si es un monto válido, actualiza los centavos.
+   * Mientras el texto está a medias ("12," o vacío) se conserva el último precio
+   * válido, para que el total no salte a cero a mitad de escritura.
+   */
   function cambiarPrecio(variantId: string, texto: string) {
     const centavos = parseMoneyToCents(texto);
-    if (centavos === null) return;
 
     setLineas((prev) =>
-      prev.map((l) => (l.variant.variant_id === variantId ? { ...l, priceCents: centavos } : l)),
+      prev.map((l) =>
+        l.variant.variant_id === variantId
+          ? { ...l, priceText: texto, ...(centavos !== null ? { priceCents: centavos } : {}) }
+          : l,
+      ),
+    );
+  }
+
+  /** Al salir del campo se normaliza el formato: "12," queda como "12.00". */
+  function normalizarPrecio(variantId: string) {
+    setLineas((prev) =>
+      prev.map((l) =>
+        l.variant.variant_id === variantId
+          ? { ...l, priceText: (l.priceCents / 100).toFixed(2) }
+          : l,
+      ),
     );
   }
 
@@ -175,7 +212,13 @@ export function PuntoDeVenta({
     // devolver los precios a los de lista o la base rechazaría la venta.
     if (nuevo !== 'contado' && esPromo) {
       setEsPromo(false);
-      setLineas((prev) => prev.map((l) => ({ ...l, priceCents: l.variant.price_cents })));
+      setLineas((prev) =>
+        prev.map((l) => ({
+          ...l,
+          priceCents: l.variant.price_cents,
+          priceText: (l.variant.price_cents / 100).toFixed(2),
+        })),
+      );
     }
   }
 
@@ -184,7 +227,13 @@ export function PuntoDeVenta({
     setEsPromo(siguiente);
 
     if (!siguiente) {
-      setLineas((prev) => prev.map((l) => ({ ...l, priceCents: l.variant.price_cents })));
+      setLineas((prev) =>
+        prev.map((l) => ({
+          ...l,
+          priceCents: l.variant.price_cents,
+          priceText: (l.variant.price_cents / 100).toFixed(2),
+        })),
+      );
     }
   }
 
@@ -272,10 +321,23 @@ export function PuntoDeVenta({
         return;
       }
 
-      const destino =
+      // Vaciar el carrito ANTES de navegar. En una venta de contado el destino
+      // era '/ventas', o sea esta misma pantalla: el componente no se
+      // desmontaba, las prendas seguían ahí y bastaba con volver a pulsar
+      // "Confirmar venta" para cobrarle dos veces al cliente.
+      setLineas([]);
+      setPagos([{ clave: Date.now(), monto: '', metodo: 'efectivo', referencia: '' }]);
+      setClienteId('');
+      setNotas('');
+      setEsPromo(false);
+      setBusqueda('');
+
+      // Se abre el detalle de la venta recién hecha: sirve de comprobante y deja
+      // a mano el abono, la devolución y el saldo pendiente.
+      const base =
         tipo === 'apartado' ? '/apartados' : tipo === 'credito' ? '/creditos' : '/ventas';
 
-      router.push(destino);
+      router.push(`${base}/${res.data}`);
       router.refresh();
     });
   }
@@ -284,7 +346,16 @@ export function PuntoDeVenta({
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 pb-4">
-      <h1 className="text-xl font-bold tracking-tight text-tinta">Nueva venta</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl font-bold tracking-tight text-tinta">Nueva venta</h1>
+
+        <Link
+          href="/ventas/historial"
+          className="text-sm font-medium text-marca hover:underline"
+        >
+          Ver historial
+        </Link>
+      </div>
 
       {/* Tipo de venta ------------------------------------------------------ */}
       <Card className="p-3">
@@ -399,8 +470,9 @@ export function PuntoDeVenta({
                   {esPromo ? (
                     <div className="mt-1.5 flex items-center gap-2">
                       <Input
-                        value={(l.priceCents / 100).toFixed(2)}
+                        value={l.priceText}
                         onChange={(e) => cambiarPrecio(l.variant.variant_id, e.target.value)}
+                        onBlur={() => normalizarPrecio(l.variant.variant_id)}
                         inputMode="decimal"
                         className="h-8 w-24 text-sm"
                         aria-label={`Precio promocional de ${l.variant.label}`}

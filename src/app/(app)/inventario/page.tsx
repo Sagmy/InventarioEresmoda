@@ -34,6 +34,7 @@ export default async function InventarioPage({
   }
 
   if (filtro === 'bajo') consulta = consulta.eq('is_low_stock', true);
+  if (filtro === 'agotado') consulta = consulta.eq('is_out_of_stock', true);
   if (filtro === 'apartado') consulta = consulta.gt('qty_reserved', 0);
 
   const { data } = await consulta

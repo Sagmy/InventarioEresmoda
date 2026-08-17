@@ -205,7 +205,10 @@ export type StockRow = {
   qty_on_hand: number;
   qty_reserved: number;
   qty_available: number;
+  /** Queda poco, pero todavía se puede vender. NO incluye el cero. */
   is_low_stock: boolean;
+  /** No queda nada disponible (lo apartado ya está descontado). */
+  is_out_of_stock: boolean;
   is_active: boolean;
   product_is_active: boolean;
   created_at: string;
@@ -342,6 +345,7 @@ export type DashboardSummary = {
     pending_cents: number;
   };
   low_stock: number;
+  out_of_stock: number;
   /** Solo presente si quien consulta es admin. */
   cash?: { today: number; week: number; month: number } | undefined;
   /** Solo presente si quien consulta es admin. */

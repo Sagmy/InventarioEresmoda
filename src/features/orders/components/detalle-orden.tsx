@@ -7,6 +7,8 @@ import { Card, CardHeader } from '@/components/ui/surfaces';
 import { PaymentBadge, PaymentProgress } from '@/components/ui/status';
 import { AbonoForm } from './abono-form';
 import { CancelarOrden } from './cancelar-orden';
+import { AnularPago } from './anular-pago';
+import { DevolucionForm } from './devolucion-form';
 import { ETIQUETA_METODO } from '@/features/orders/schemas';
 import type { OrderItemRow, OrderRow, Payment } from '@/types/database';
 
@@ -154,18 +156,49 @@ export async function DetalleOrden({ orderId }: { orderId: string }) {
                   <p className="text-xs text-tinta-suave">{formatDateTime(p.paid_at)}</p>
                 </div>
 
-                <span
-                  className={`tabular shrink-0 text-sm font-semibold ${
-                    p.voided_at ? 'text-tinta-tenue line-through' : 'text-tinta'
-                  }`}
-                >
-                  {formatMoney(p.amount_cents)}
-                </span>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span
+                    className={`tabular text-sm font-semibold ${
+                      p.voided_at ? 'text-tinta-tenue line-through' : 'text-tinta'
+                    }`}
+                  >
+                    {formatMoney(p.amount_cents)}
+                  </span>
+
+                  {/* Anular solo tiene sentido mientras la transacción siga
+                      abierta; si ya se liquidó, la mercancía salió y lo que
+                      corresponde es una devolución. */}
+                  {esAdmin && abierta && !p.voided_at ? (
+                    <AnularPago
+                      paymentId={p.id}
+                      amountCents={p.amount_cents}
+                      method={p.method}
+                    />
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>
         )}
       </Card>
+
+      {/* Devolución: solo cuando la venta ya se liquidó y la prenda salió ----- */}
+      {o.status === 'completed' ? (
+        <Card>
+          <CardHeader
+            title="Devolución"
+            subtitle="El cliente trae de vuelta una prenda de esta venta"
+          />
+          <div className="p-4">
+            <DevolucionForm
+              orderId={o.id}
+              items={items}
+              paidCents={o.paid_cents}
+              esAdmin={esAdmin}
+            />
+          </div>
+        </Card>
+      ) : null}
 
       {/* Cancelación: solo admin y solo si sigue abierta --------------------- */}
       {abierta && esAdmin ? (

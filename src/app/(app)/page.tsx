@@ -64,12 +64,9 @@ export default async function DashboardPage() {
               : undefined
           }
         />
-        <Aviso
-          href="/inventario?filtro=bajo"
-          icono={<PackageX className="size-4" />}
-          cantidad={datos?.low_stock ?? 0}
-          titulo="Prendas con poco stock"
-          detalle="Revisa qué hay que reponer"
+        <AvisoStock
+          agotadas={datos?.out_of_stock ?? 0}
+          pocas={datos?.low_stock ?? 0}
         />
       </section>
 
@@ -180,6 +177,58 @@ function Aviso({
             {cantidad} {titulo}
           </p>
           {detalle ? <p className="truncate text-xs text-tinta-suave">{detalle}</p> : null}
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
+/**
+ * Agotado y "poco stock" son avisos distintos y no deben mezclarse.
+ *
+ * Con poco stock todavía puedes vender y solo conviene reponer; agotado
+ * significa que ya no hay nada que ofrecer, y eso es lo primero que el dueño
+ * necesita ver al abrir el sistema. Antes ambos casos caían en el mismo
+ * contador y una prenda en cero se anunciaba como "poco stock".
+ */
+function AvisoStock({ agotadas, pocas }: { agotadas: number; pocas: number }) {
+  const critico = agotadas > 0;
+  const aviso = pocas > 0;
+
+  const destino = critico ? '/inventario?filtro=agotado' : '/inventario?filtro=bajo';
+
+  const titulo = critico
+    ? `${agotadas} ${agotadas === 1 ? 'prenda agotada' : 'prendas agotadas'}`
+    : aviso
+      ? `${pocas} ${pocas === 1 ? 'prenda con poco stock' : 'prendas con poco stock'}`
+      : 'Inventario al día';
+
+  const detalle = critico
+    ? pocas > 0
+      ? `Sin unidades disponibles · ${pocas} más con poco stock`
+      : 'Sin unidades disponibles para vender'
+    : aviso
+      ? 'Todavía se pueden vender, pero conviene reponer'
+      : 'Nada agotado ni por agotarse';
+
+  return (
+    <Link href={destino}>
+      <Card
+        className={`flex items-center gap-3 p-4 transition-colors hover:border-borde-fuerte ${
+          critico
+            ? 'border-rojo/40 bg-rojo-suave'
+            : aviso
+              ? 'border-ambar/40 bg-ambar-suave'
+              : ''
+        }`}
+      >
+        <span className={critico ? 'text-rojo' : aviso ? 'text-ambar' : 'text-tinta-tenue'}>
+          <PackageX className="size-4" />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-tinta">{titulo}</p>
+          <p className="truncate text-xs text-tinta-suave">{detalle}</p>
         </div>
       </Card>
     </Link>

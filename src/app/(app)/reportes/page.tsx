@@ -1,7 +1,7 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 import { formatMoney } from '@/lib/money';
-import { formatDate } from '@/lib/utils';
+import { fechaLocalISO, formatDate } from '@/lib/utils';
 import { Card, CardHeader, EmptyState } from '@/components/ui/surfaces';
 import { ETIQUETA_METODO } from '@/features/orders/schemas';
 import type { CashBucket, CashByMethod, ProfitBucket, TopProduct } from '@/types/database';
@@ -25,13 +25,19 @@ export default async function ReportesPage({
   const clave: Rango = rango === 'semana' || rango === 'mes' ? rango : 'dia';
   const cfg = RANGOS[clave];
 
+  const supabase = await getSupabaseServerClient();
+
+  // La zona horaria de la tienda decide dónde corta el día. Sin esto, el rango
+  // se calcularía en UTC y en Venezuela las ventas de la noche caerían en el día
+  // siguiente.
+  const { data: ajustes } = await supabase.from('settings').select('timezone').maybeSingle();
+  const zona = ajustes?.timezone ?? 'America/Caracas';
+
   const hoy = new Date();
   const desde = new Date(hoy);
   desde.setDate(desde.getDate() - cfg.dias);
 
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-
-  const supabase = await getSupabaseServerClient();
+  const iso = (d: Date) => fechaLocalISO(d, zona);
 
   const [{ data: caja }, { data: porMetodo }, { data: ganancia }, { data: top }] =
     await Promise.all([

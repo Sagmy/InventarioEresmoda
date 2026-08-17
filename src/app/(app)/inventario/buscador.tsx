@@ -8,8 +8,9 @@ import { cn } from '@/lib/utils';
 
 const FILTROS = [
   { valor: '', etiqueta: 'Todas' },
-  { valor: 'apartado', etiqueta: 'Con apartados' },
+  { valor: 'agotado', etiqueta: 'Agotadas' },
   { valor: 'bajo', etiqueta: 'Poco stock' },
+  { valor: 'apartado', etiqueta: 'Con apartados' },
 ] as const;
 
 export function BuscadorInventario({

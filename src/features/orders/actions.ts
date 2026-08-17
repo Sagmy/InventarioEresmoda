@@ -5,6 +5,7 @@
 // rompe la página entera en tiempo de ejecución, no en compilación.
 
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { fail, ok, toUserMessage, type ActionResult } from '@/lib/actions';
 import {
@@ -89,6 +90,42 @@ export async function cancelarVentaAction(input: unknown): Promise<ActionResult>
     p_refund_cents: v.refund_cents,
     p_refund_method: v.refund_method,
     p_reason: v.reason,
+  });
+
+  if (error) return fail(toUserMessage(error));
+
+  refrescarTodo();
+  return ok();
+}
+
+/**
+ * Anula un abono mal registrado (un $50 donde iban $5, por ejemplo).
+ *
+ * El pago no se borra: queda marcado como anulado, con quién lo anuló y por
+ * qué. Borrarlo dejaría un hueco silencioso en la caja del día que nadie podría
+ * explicar después.
+ *
+ * La base solo lo permite en transacciones abiertas. Si la venta ya está
+ * liquidada, la mercancía salió y el instrumento correcto es una devolución.
+ */
+export async function anularPagoAction(
+  paymentId: string,
+  motivo: string,
+): Promise<ActionResult> {
+  const parsed = z
+    .object({
+      paymentId: z.string().uuid(),
+      motivo: z.string().trim().min(3, 'Explica por qué se anula el pago.').max(500),
+    })
+    .safeParse({ paymentId, motivo });
+
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');
+
+  const supabase = await getSupabaseServerClient();
+
+  const { error } = await supabase.rpc('void_payment', {
+    p_payment_id: parsed.data.paymentId,
+    p_reason: parsed.data.motivo,
   });
 
   if (error) return fail(toUserMessage(error));
