@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Inventario Eresmoda',
+  title: 'Inventario Eres Moda',
   description: 'Inventario, ventas, apartados y créditos',
   // El sistema es privado: que ningún buscador lo indexe.
   robots: { index: false, follow: false },

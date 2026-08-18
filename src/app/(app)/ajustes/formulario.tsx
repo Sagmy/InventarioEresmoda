@@ -3,9 +3,10 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input, Label } from '@/components/ui/field';
+import { Input, Label, Select } from '@/components/ui/field';
 import { Alert, Card, CardHeader } from '@/components/ui/surfaces';
 import { guardarAjustesAction } from '@/features/settings/actions';
+import { ZONAS_HORARIAS } from '@/features/settings/zonas';
 import type { Settings } from '@/types/database';
 
 export function FormularioAjustes({ ajustes }: { ajustes: Settings }) {
@@ -13,6 +14,13 @@ export function FormularioAjustes({ ajustes }: { ajustes: Settings }) {
   const [error, setError] = useState<string | null>(null);
   const [guardado, setGuardado] = useState(false);
   const [pendiente, startTransition] = useTransition();
+
+  // Una zona guardada que no esté en la lista (puesta a mano antes, o retirada
+  // de la lista después) se añade tal cual: si no, el desplegable mostraría otra
+  // y el primer guardado le cambiaría el cierre del día a la tienda sin avisar.
+  const zonas = ZONAS_HORARIAS.some((z) => z.valor === ajustes.timezone)
+    ? ZONAS_HORARIAS
+    : [{ valor: ajustes.timezone, etiqueta: ajustes.timezone }, ...ZONAS_HORARIAS];
 
   function enviar(formData: FormData) {
     setError(null);
@@ -25,7 +33,6 @@ export function FormularioAjustes({ ajustes }: { ajustes: Settings }) {
 
     startTransition(async () => {
       const res = await guardarAjustesAction({
-        store_name: String(formData.get('store_name') ?? '') || undefined,
         timezone: String(formData.get('timezone') ?? '') || undefined,
         layaway_min_deposit_pct: num('layaway_min_deposit_pct'),
         layaway_term_days: num('layaway_term_days'),
@@ -50,17 +57,19 @@ export function FormularioAjustes({ ajustes }: { ajustes: Settings }) {
         <CardHeader title="Tienda" />
         <div className="grid gap-4 p-4 sm:grid-cols-2">
           <div>
-            <Label htmlFor="store_name">Nombre</Label>
-            <Input id="store_name" name="store_name" defaultValue={ajustes.store_name} maxLength={80} />
-          </div>
-
-          <div>
             <Label htmlFor="timezone" hint="cierre de caja">
               Zona horaria
             </Label>
-            <Input id="timezone" name="timezone" defaultValue={ajustes.timezone} maxLength={60} />
+            <Select id="timezone" name="timezone" defaultValue={ajustes.timezone}>
+              {zonas.map((z) => (
+                <option key={z.valor} value={z.valor}>
+                  {z.etiqueta}
+                </option>
+              ))}
+            </Select>
             <p className="mt-1 text-xs text-tinta-tenue">
-              Determina a qué hora cierra el día. Ej: America/Caracas
+              Marca a qué hora cierra el día de la tienda. De ella dependen los reportes de caja,
+              el filtro «solo hoy» del historial y el vencimiento de los apartados.
             </p>
           </div>
 

@@ -663,7 +663,6 @@ export type Database = {
           layaway_reminder_days: number
           layaway_term_days: number
           low_stock_threshold: number
-          store_name: string
           timezone: string
           updated_at: string
           updated_by: string | null
@@ -677,7 +676,6 @@ export type Database = {
           layaway_reminder_days?: number
           layaway_term_days?: number
           low_stock_threshold?: number
-          store_name?: string
           timezone?: string
           updated_at?: string
           updated_by?: string | null
@@ -691,7 +689,6 @@ export type Database = {
           layaway_reminder_days?: number
           layaway_term_days?: number
           low_stock_threshold?: number
-          store_name?: string
           timezone?: string
           updated_at?: string
           updated_by?: string | null
@@ -1271,7 +1268,6 @@ export type Database = {
           p_layaway_reminder_days?: number
           p_layaway_term_days?: number
           p_low_stock_threshold?: number
-          p_store_name?: string
           p_timezone?: string
         }
         Returns: undefined
