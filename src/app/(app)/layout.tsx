@@ -33,7 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <RealtimeRefresher />
 
       <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-borde bg-superficie px-4 py-3">
-        <span className="font-bold tracking-tight text-tinta">Eresmoda</span>
+        <span className="font-bold tracking-tight text-tinta">Eres Moda</span>
 
         <div className="flex items-center gap-3">
           <Link

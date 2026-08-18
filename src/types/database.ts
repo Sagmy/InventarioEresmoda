@@ -66,7 +66,6 @@ export type Profile = {
 
 export type Settings = {
   id: boolean;
-  store_name: string;
   currency_code: string;
   timezone: string;
   layaway_min_deposit_pct: number;
@@ -540,7 +539,6 @@ export type Database = {
       };
       update_settings: {
         Args: {
-          p_store_name?: string | null | undefined;
           p_timezone?: string | null | undefined;
           p_layaway_min_deposit_pct?: number | null | undefined;
           p_layaway_term_days?: number | null | undefined;

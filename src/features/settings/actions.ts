@@ -94,7 +94,9 @@ export async function crearUsuarioAction(input: unknown): Promise<ActionResult> 
 }
 
 const guardarAjustes = z.object({
-  store_name: z.string().trim().min(1).max(80).optional(),
+  // La zona la elige un desplegable cerrado (ver features/settings/zonas.ts),
+  // pero quien manda es el trigger de la base, que la contrasta con
+  // pg_timezone_names. Aquí solo se comprueba la forma.
   timezone: z.string().trim().min(3).max(60).optional(),
   layaway_min_deposit_pct: z.number().min(0).max(100).nullable().default(null),
   layaway_term_days: z.number().int().positive().max(365).nullable().default(null),
@@ -122,7 +124,6 @@ export async function guardarAjustesAction(input: unknown): Promise<ActionResult
   const supabase = await getSupabaseServerClient();
 
   const { error } = await supabase.rpc('update_settings', {
-    p_store_name: v.store_name ?? null,
     p_timezone: v.timezone ?? null,
     p_layaway_min_deposit_pct: v.layaway_min_deposit_pct,
     p_layaway_term_days: v.layaway_term_days,
