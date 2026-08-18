@@ -111,6 +111,17 @@ body {
   [type='submit'] {
     min-height: 44px;
   }
+
+  /* Safari en iOS hace zoom automático al enfocar un campo cuya letra mida
+     menos de 16px, y luego deja la página ampliada. Con el tamaño `text-sm`
+     (14px) pasaba en TODOS los campos: escribir un precio en el mostrador
+     desencadenaba un zoom y había que volver a alejar a mano cada vez.
+     Forzando 16px en pantallas táctiles, el zoom no se dispara. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 :focus-visible {

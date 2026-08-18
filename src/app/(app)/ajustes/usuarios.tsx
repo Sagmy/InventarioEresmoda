@@ -35,9 +35,14 @@ export function GestionUsuarios({ usuarios, miId }: { usuarios: Profile[]; miId:
           const soyYo = u.id === miId;
 
           return (
-            <li key={u.id} className="flex items-center justify-between gap-3 px-4 py-3">
+            /* En celular los botones no caben junto al nombre: se van debajo.
+               Si comparten fila, el nombre queda cortado en dos palabras. */
+            <li
+              key={u.id}
+              className="px-4 py-3 sm:flex sm:items-center sm:justify-between sm:gap-3"
+            >
               <div className="min-w-0">
-                <p className="truncate font-medium text-tinta">
+                <p className="font-medium text-tinta">
                   {u.full_name}
                   {soyYo ? <span className="ml-2 text-xs text-tinta-tenue">(tú)</span> : null}
                 </p>
@@ -48,9 +53,9 @@ export function GestionUsuarios({ usuarios, miId }: { usuarios: Profile[]; miId:
               </div>
 
               {soyYo ? (
-                <span className="text-xs text-tinta-tenue">—</span>
+                <span className="hidden text-xs text-tinta-tenue sm:inline">—</span>
               ) : (
-                <div className="flex shrink-0 gap-2">
+                <div className="mt-2 flex flex-wrap gap-2 sm:mt-0 sm:shrink-0 sm:flex-nowrap">
                   <Button
                     variant="secondary"
                     size="sm"

@@ -146,8 +146,14 @@ export async function DetalleOrden({ orderId }: { orderId: string }) {
           <ul className="divide-y divide-borde">
             {abonos.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                <div className="min-w-0">
-                  <p className={`text-sm ${p.voided_at ? 'text-tinta-tenue line-through' : 'text-tinta'}`}>
+                <div className="min-w-0 flex-1">
+                  {/* `truncate` para que una referencia larga no parta la línea
+                      en dos y descuadre la fila en el celular. */}
+                  <p
+                    className={`truncate text-sm ${
+                      p.voided_at ? 'text-tinta-tenue line-through' : 'text-tinta'
+                    }`}
+                  >
                     {ETIQUETA_METODO[p.method] ?? p.method}
                     {p.reference ? (
                       <span className="ml-2 text-xs text-tinta-tenue">{p.reference}</span>

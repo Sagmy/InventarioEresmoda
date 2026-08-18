@@ -85,7 +85,14 @@ export function BottomNav({ pendingCount }: { pendingCount: number }) {
   const items = ITEMS.filter((i) => i.principal);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-borde bg-superficie md:hidden">
+    /* `env(safe-area-inset-bottom)` deja hueco para la barra del gesto de inicio
+       del iPhone. Sin eso, los botones de la barra inferior quedan justo debajo
+       de ella y cuesta acertarles con el dedo. En equipos sin esa barra el
+       valor es cero y no cambia nada. */
+    <nav
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-borde bg-superficie md:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       <ul className="grid grid-cols-4">
         {items.map((item) => {
           const activo = estaActivo(pathname, item.href);

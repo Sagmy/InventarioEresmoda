@@ -458,37 +458,53 @@ export function PuntoDeVenta({
         ) : (
           <ul className="divide-y divide-borde">
             {lineas.map((l) => (
-              <li key={l.variant.variant_id} className="flex items-center gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-tinta">
-                    {l.variant.product_name}
-                  </p>
-                  <p className="text-xs text-tinta-suave">
-                    {l.variant.color} · {l.variant.size}
-                  </p>
-
-                  {esPromo ? (
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <Input
-                        value={l.priceText}
-                        onChange={(e) => cambiarPrecio(l.variant.variant_id, e.target.value)}
-                        onBlur={() => normalizarPrecio(l.variant.variant_id)}
-                        inputMode="decimal"
-                        className="h-8 w-24 text-sm"
-                        aria-label={`Precio promocional de ${l.variant.label}`}
-                      />
-                      <span className="text-xs text-tinta-tenue line-through">
-                        {formatMoney(l.variant.price_cents)}
-                      </span>
-                    </div>
-                  ) : (
-                    <p className="tabular mt-0.5 text-xs text-tinta-suave">
-                      {formatMoney(l.priceCents)} c/u
+              /* En celular la línea se parte en dos: arriba la prenda y el botón
+                 de quitar; abajo la cantidad y el total. Antes iba todo en una
+                 sola fila y el importe se montaba encima del icono de la
+                 papelera. */
+              <li key={l.variant.variant_id} className="px-4 py-3 sm:flex sm:items-center sm:gap-3">
+                <div className="flex items-start gap-2 sm:min-w-0 sm:flex-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-tinta">{l.variant.product_name}</p>
+                    <p className="text-xs text-tinta-suave">
+                      {l.variant.color} · {l.variant.size}
                     </p>
-                  )}
+
+                    {esPromo ? (
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <Input
+                          value={l.priceText}
+                          onChange={(e) => cambiarPrecio(l.variant.variant_id, e.target.value)}
+                          onBlur={() => normalizarPrecio(l.variant.variant_id)}
+                          inputMode="decimal"
+                          className="h-8 w-24 text-sm"
+                          aria-label={`Precio promocional de ${l.variant.label}`}
+                        />
+                        <span className="text-xs text-tinta-tenue line-through">
+                          {formatMoney(l.variant.price_cents)}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="tabular mt-0.5 text-xs text-tinta-suave">
+                        {formatMoney(l.priceCents)} c/u
+                      </p>
+                    )}
+                  </div>
+
+                  {/* En celular el botón de quitar va arriba, junto al nombre. */}
+                  <button
+                    type="button"
+                    onClick={() => quitar(l.variant.variant_id)}
+                    className="shrink-0 p-1 text-tinta-tenue hover:text-rojo sm:hidden"
+                    aria-label={`Quitar ${l.variant.label}`}
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
                 </div>
 
-                <div className="flex items-center gap-1">
+                {/* Cantidad y total. En celular ocupan su propia línea, con el
+                    importe empujado al extremo derecho. */}
+                <div className="mt-2 flex items-center gap-1 sm:mt-0 sm:contents">
                   <Button
                     type="button"
                     variant="secondary"
@@ -512,16 +528,16 @@ export function PuntoDeVenta({
                   >
                     <Plus className="size-3.5" />
                   </Button>
-                </div>
 
-                <p className="tabular w-20 shrink-0 text-right text-sm font-semibold text-tinta">
-                  {formatMoney(l.priceCents * l.qty)}
-                </p>
+                  <p className="tabular ml-auto text-sm font-semibold text-tinta sm:ml-0 sm:w-24 sm:shrink-0 sm:text-right">
+                    {formatMoney(l.priceCents * l.qty)}
+                  </p>
+                </div>
 
                 <button
                   type="button"
                   onClick={() => quitar(l.variant.variant_id)}
-                  className="text-tinta-tenue hover:text-rojo"
+                  className="hidden shrink-0 text-tinta-tenue hover:text-rojo sm:block"
                   aria-label={`Quitar ${l.variant.label}`}
                 >
                   <Trash2 className="size-4" />

@@ -9,16 +9,21 @@
  * el usuario escribe.
  */
 
+/**
+ * Formato de cifras. Sin `style: 'currency'` a propósito.
+ *
+ * Con esa opción, es-VE escribe el código ISO: "USD 125,00". Además de leerse
+ * mal en una tienda, ocupa cuatro caracteres extra que en el celular se comen el
+ * espacio del nombre de la prenda. Se antepone el símbolo a mano.
+ */
 const formatter = new Intl.NumberFormat('es-VE', {
-  style: 'currency',
-  currency: 'USD',
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
-/** 12345 → "$123,45" */
+/** 12345 → "$125,00" · 150000 → "$1.500,00" */
 export function formatMoney(cents: number): string {
-  return formatter.format((cents ?? 0) / 100);
+  return `$${formatter.format((cents ?? 0) / 100)}`;
 }
 
 /** 12345 → "123.45". Para rellenar un campo de formulario. */

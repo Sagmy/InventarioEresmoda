@@ -107,7 +107,10 @@ export default async function HistorialPage({
                       </span>
                     ) : null}
                   </p>
-                  <p className="text-xs text-tinta-suave">
+                  {/* `truncate` corta con puntos suspensivos; sin él el nombre
+                      largo del cliente se partía y quedaba recortado a media
+                      palabra contra el borde de la tarjeta. */}
+                  <p className="truncate text-xs text-tinta-suave">
                     {formatDateTime(o.created_at)}
                     {o.customer_name ? ` · ${o.customer_name}` : ''}
                     {` · ${o.item_count} ${o.item_count === 1 ? 'prenda' : 'prendas'}`}

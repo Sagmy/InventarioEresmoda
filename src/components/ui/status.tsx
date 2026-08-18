@@ -141,9 +141,10 @@ export function StockNumbers({
   const compacto = size === 'sm';
 
   return (
-    <div className={cn('flex items-center', compacto ? 'gap-3' : 'gap-4')}>
+    <div className={cn('flex items-center', compacto ? 'gap-2.5 sm:gap-3' : 'gap-3 sm:gap-4')}>
       <Numero
         etiqueta="Disponible"
+        etiquetaCorta="Disp"
         valor={available}
         compacto={compacto}
         className={available <= 0 ? 'text-rojo' : 'text-tinta'}
@@ -151,11 +152,18 @@ export function StockNumbers({
       />
 
       {reserved > 0 ? (
-        <Numero etiqueta="Apartado" valor={reserved} compacto={compacto} className="text-ambar" />
+        <Numero
+          etiqueta="Apartado"
+          etiquetaCorta="Apart"
+          valor={reserved}
+          compacto={compacto}
+          className="text-ambar"
+        />
       ) : null}
 
       <Numero
         etiqueta="Físico"
+        etiquetaCorta="Fís"
         valor={onHand}
         compacto={compacto}
         className="text-tinta-tenue"
@@ -164,14 +172,21 @@ export function StockNumbers({
   );
 }
 
+/**
+ * En el celular las etiquetas completas ("DISPONIBLE", "APARTADO", "FÍSICO")
+ * ocupaban más de la mitad del ancho de la pantalla y dejaban el nombre de la
+ * prenda cortado en tres letras. A partir de 640 px se muestran enteras.
+ */
 function Numero({
   etiqueta,
+  etiquetaCorta,
   valor,
   className,
   compacto,
   destacado = false,
 }: {
   etiqueta: string;
+  etiquetaCorta: string;
   valor: number;
   className?: string;
   compacto: boolean;
@@ -189,7 +204,10 @@ function Numero({
       >
         {valor}
       </div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-tinta-tenue">{etiqueta}</div>
+      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-tinta-tenue">
+        <span className="sm:hidden">{etiquetaCorta}</span>
+        <span className="hidden sm:inline">{etiqueta}</span>
+      </div>
     </div>
   );
 }

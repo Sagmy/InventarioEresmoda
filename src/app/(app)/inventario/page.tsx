@@ -91,27 +91,44 @@ export default async function InventarioPage({
       ) : (
         <Card className="divide-y divide-borde">
           {filas.map((fila) => (
-            <div key={fila.variant_id} className="flex items-center gap-4 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-tinta">{fila.product_name}</p>
-                <p className="text-sm text-tinta-suave">
-                  {fila.color} · {fila.size}
-                  <span className="ml-2 text-xs text-tinta-tenue">{fila.sku}</span>
-                </p>
-                <p className="tabular mt-0.5 text-sm font-medium text-tinta">
-                  {formatMoney(fila.price_cents)}
-                </p>
+            /* En celular la fila se apila: el nombre necesita el ancho completo
+               o queda cortado en tres letras. A partir de 640 px vuelve a una
+               sola línea, que aprovecha mejor la pantalla grande. */
+            <div key={fila.variant_id} className="px-4 py-3 sm:flex sm:items-center sm:gap-4">
+              <div className="flex items-start gap-3 sm:min-w-0 sm:flex-1">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-tinta">{fila.product_name}</p>
+                  <p className="text-sm text-tinta-suave">
+                    {fila.color} · {fila.size}
+                    <span className="ml-2 text-xs text-tinta-tenue">{fila.sku}</span>
+                  </p>
+                  <p className="tabular mt-0.5 text-sm font-medium text-tinta">
+                    {formatMoney(fila.price_cents)}
+                  </p>
+                </div>
+
+                {/* El menú acompaña al nombre en celular; en pantalla ancha se
+                    va al extremo derecho de la fila. */}
+                {esAdmin ? (
+                  <div className="shrink-0 sm:hidden">
+                    <AccionesStock variantId={fila.variant_id} etiqueta={fila.label} />
+                  </div>
+                ) : null}
               </div>
 
-              <StockNumbers
-                available={fila.qty_available}
-                reserved={fila.qty_reserved}
-                onHand={fila.qty_on_hand}
-                size="sm"
-              />
+              <div className="mt-2 flex justify-start sm:mt-0 sm:shrink-0">
+                <StockNumbers
+                  available={fila.qty_available}
+                  reserved={fila.qty_reserved}
+                  onHand={fila.qty_on_hand}
+                  size="sm"
+                />
+              </div>
 
               {esAdmin ? (
-                <AccionesStock variantId={fila.variant_id} etiqueta={fila.label} />
+                <div className="hidden sm:block">
+                  <AccionesStock variantId={fila.variant_id} etiqueta={fila.label} />
+                </div>
               ) : null}
             </div>
           ))}

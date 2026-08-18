@@ -87,18 +87,21 @@ function Grupo({
                 href={`/${f.type === 'apartado' ? 'apartados' : 'creditos'}/${f.order_id}`}
                 className="block px-4 py-3 hover:bg-lienzo"
               >
-                <div className="flex items-start justify-between gap-3">
+                {/* En celular la etiqueta del semáforo va debajo del nombre: si
+                    comparten fila, el nombre del cliente —el dato que hace falta
+                    para llamarlo— queda cortado a la mitad. */}
+                <div className="sm:flex sm:items-start sm:justify-between sm:gap-3">
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-tinta">
+                    <p className="font-medium text-tinta">
                       {f.customer_name ?? 'Sin cliente'}
                     </p>
-                    <p className="text-xs text-tinta-suave">
+                    <p className="truncate text-xs text-tinta-suave">
                       {f.type === 'apartado' ? 'Apartado' : 'Crédito'} #{f.order_number}
                       {f.customer_phone ? ` · ${f.customer_phone}` : ''}
                     </p>
                   </div>
 
-                  <div className="shrink-0 text-right">
+                  <div className="mt-1.5 flex items-center gap-2 sm:mt-0 sm:block sm:shrink-0 sm:text-right">
                     <AlertChip level={f.alert_level}>
                       {f.type === 'apartado' && f.days_left !== null
                         ? f.days_left < 0
@@ -108,7 +111,7 @@ function Grupo({
                     </AlertChip>
 
                     {f.type === 'apartado' && f.due_date ? (
-                      <p className="mt-1 text-[11px] text-tinta-tenue">
+                      <p className="text-[11px] text-tinta-tenue sm:mt-1">
                         vence {formatDate(f.due_date)}
                       </p>
                     ) : null}
