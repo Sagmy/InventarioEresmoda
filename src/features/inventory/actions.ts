@@ -18,6 +18,13 @@ const variante = z.object({
   qty: z.number().int().nonnegative().default(0),
 });
 
+const guardarCategoria = z.object({
+  // Sin id se crea; con id se renombra la que ya existe. Es la misma función de
+  // base para los dos casos.
+  id: z.string().uuid().nullable().default(null),
+  name: z.string().trim().min(1, 'La categoría necesita un nombre.').max(60),
+});
+
 const crearProducto = z.object({
   name: z.string().trim().min(1, 'El producto necesita un nombre.').max(160),
   description: z.string().trim().max(2000).optional(),
@@ -47,6 +54,38 @@ const editarVariante = z.object({
   cost_cents: z.number().int().nonnegative().nullable().default(null),
   is_active: z.boolean().nullable().default(null),
 });
+
+/**
+ * Crea o renombra una categoría.
+ *
+ * La función de base existía desde el principio pero no la llamaba nadie, así
+ * que `categories` se quedaba vacía y el desplegable de la ficha de prenda no
+ * tenía nada que ofrecer.
+ */
+export async function guardarCategoriaAction(input: unknown): Promise<ActionResult<string>> {
+  const parsed = guardarCategoria.safeParse(input);
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');
+
+  const v = parsed.data;
+  const supabase = await getSupabaseServerClient();
+
+  const { data, error } = await supabase.rpc('upsert_category', {
+    p_name: v.name,
+    p_id: v.id,
+  });
+
+  if (error) {
+    // El nombre es único en la base. Su mensaje crudo delata el nombre de la
+    // restricción, y al mostrador eso no le dice nada.
+    if (error.code === '23505') return fail('Ya existe una categoría con ese nombre.');
+    return fail(toUserMessage(error));
+  }
+
+  // La ficha de prenda lee la lista en el servidor, y Ajustes la muestra entera.
+  revalidatePath('/inventario/nuevo');
+  revalidatePath('/ajustes');
+  return ok(data as string);
+}
 
 export async function crearProductoAction(input: unknown): Promise<ActionResult<string>> {
   const parsed = crearProducto.safeParse(input);

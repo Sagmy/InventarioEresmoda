@@ -4,15 +4,17 @@ import { Card, CardHeader } from '@/components/ui/surfaces';
 import { FormularioAjustes } from './formulario';
 import { GestionUsuarios } from './usuarios';
 import { NuevoUsuario } from './nuevo-usuario';
-import type { Profile, Settings } from '@/types/database';
+import { GestionCategorias } from './categorias';
+import type { Category, Profile, Settings } from '@/types/database';
 
 export default async function AjustesPage() {
   const yo = await requireAdmin();
   const supabase = await getSupabaseServerClient();
 
-  const [{ data: ajustes }, { data: usuarios }] = await Promise.all([
+  const [{ data: ajustes }, { data: usuarios }, { data: categorias }] = await Promise.all([
     supabase.from('settings').select('*').maybeSingle(),
     supabase.from('profiles').select('*').order('created_at'),
+    supabase.from('categories').select('*').order('name'),
   ]);
 
   return (
@@ -26,6 +28,14 @@ export default async function AjustesPage() {
       </div>
 
       <FormularioAjustes ajustes={ajustes as Settings} />
+
+      <Card>
+        <CardHeader
+          title="Categorías"
+          subtitle="Agrupan las prendas del inventario. Se eligen al dar de alta una."
+        />
+        <GestionCategorias categorias={(categorias ?? []) as Category[]} />
+      </Card>
 
       <Card>
         <CardHeader
