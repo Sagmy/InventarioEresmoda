@@ -18,6 +18,13 @@ const variante = z.object({
   qty: z.number().int().nonnegative().default(0),
 });
 
+const guardarCategoria = z.object({
+  // Sin id se crea; con id se renombra la que ya existe. Es la misma función de
+  // base para los dos casos.
+  id: z.string().uuid().nullable().default(null),
+  name: z.string().trim().min(1, 'La categoría necesita un nombre.').max(60),
+});
+
 const crearProducto = z.object({
   name: z.string().trim().min(1, 'El producto necesita un nombre.').max(160),
   description: z.string().trim().max(2000).optional(),
@@ -47,6 +54,60 @@ const editarVariante = z.object({
   cost_cents: z.number().int().nonnegative().nullable().default(null),
   is_active: z.boolean().nullable().default(null),
 });
+
+/**
+ * Crea o renombra una categoría.
+ *
+ * La función de base existía desde el principio pero no la llamaba nadie, así
+ * que `categories` se quedaba vacía y el desplegable de la ficha de prenda no
+ * tenía nada que ofrecer.
+ */
+export async function guardarCategoriaAction(input: unknown): Promise<ActionResult<string>> {
+  const parsed = guardarCategoria.safeParse(input);
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');
+
+  const v = parsed.data;
+  const supabase = await getSupabaseServerClient();
+
+  const { data, error } = await supabase.rpc('upsert_category', {
+    p_name: v.name,
+    p_id: v.id,
+  });
+
+  if (error) {
+    // El nombre es único en la base. Su mensaje crudo delata el nombre de la
+    // restricción, y al mostrador eso no le dice nada.
+    if (error.code === '23505') return fail('Ya existe una categoría con ese nombre.');
+    return fail(toUserMessage(error));
+  }
+
+  // La ficha de prenda lee la lista en el servidor, y Ajustes la muestra entera.
+  revalidatePath('/inventario/nuevo');
+  revalidatePath('/ajustes');
+  return ok(data as string);
+}
+
+/**
+ * Borra una categoría, si la base deja.
+ *
+ * No lleva confirmación aquí: quien decide si se puede borrar es la función de
+ * base, que se niega cuando la categoría tiene prendas dentro y dice cuántas.
+ * Un DELETE directo sí colaría, porque la clave foránea es `on delete set null`
+ * y dejaría todas esas prendas sin categoría en silencio.
+ */
+export async function borrarCategoriaAction(id: unknown): Promise<ActionResult> {
+  const parsed = z.string().uuid().safeParse(id);
+  if (!parsed.success) return fail('Categoría no válida.');
+
+  const supabase = await getSupabaseServerClient();
+
+  const { error } = await supabase.rpc('delete_category', { p_id: parsed.data });
+  if (error) return fail(toUserMessage(error));
+
+  revalidatePath('/inventario/nuevo');
+  revalidatePath('/ajustes');
+  return ok();
+}
 
 export async function crearProductoAction(input: unknown): Promise<ActionResult<string>> {
   const parsed = crearProducto.safeParse(input);
@@ -105,6 +166,52 @@ export async function ajustarInventarioAction(input: unknown): Promise<ActionRes
     p_variant_id: v.variant_id,
     p_delta: v.delta,
     p_note: v.note,
+  });
+
+  if (error) return fail(toUserMessage(error));
+
+  revalidatePath('/inventario');
+  return ok();
+}
+
+/**
+ * Retira o devuelve al mostrador una talla/color concreto.
+ *
+ * Retirar no borra nada: la variante desaparece del inventario y del punto de
+ * venta, pero su historial de ventas y su libro de movimientos siguen enteros.
+ * Borrarla de verdad sería imposible de todos modos, porque `order_items` y
+ * `stock_movements` la referencian con `on delete restrict`, y ese libro es la
+ * auditoría que permite explicar por qué hay 3 y no 5.
+ */
+export async function cambiarActivoVarianteAction(
+  variantId: string,
+  activo: boolean,
+): Promise<ActionResult> {
+  const supabase = await getSupabaseServerClient();
+
+  // Los demás parámetros van vacíos a propósito: la función de base los recoge
+  // con coalesce, así que talla, color y precio se quedan como estaban.
+  const { error } = await supabase.rpc('update_variant', {
+    p_id: variantId,
+    p_is_active: activo,
+  });
+
+  if (error) return fail(toUserMessage(error));
+
+  revalidatePath('/inventario');
+  return ok();
+}
+
+/** Lo mismo, pero para la prenda entera y todas sus tallas de una vez. */
+export async function cambiarActivoProductoAction(
+  productId: string,
+  activo: boolean,
+): Promise<ActionResult> {
+  const supabase = await getSupabaseServerClient();
+
+  const { error } = await supabase.rpc('update_product', {
+    p_id: productId,
+    p_is_active: activo,
   });
 
   if (error) return fail(toUserMessage(error));

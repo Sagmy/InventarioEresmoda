@@ -524,6 +524,7 @@ export type Database = {
         Returns: undefined;
       };
       upsert_category: { Args: { p_name: string; p_id?: string | null }; Returns: string };
+      delete_category: { Args: { p_id: string }; Returns: undefined };
       set_customer_active: { Args: { p_id: string; p_active: boolean }; Returns: undefined };
       delete_customer: { Args: { p_id: string }; Returns: undefined };
       upsert_customer: {

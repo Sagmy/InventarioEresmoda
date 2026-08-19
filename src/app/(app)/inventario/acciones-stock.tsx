@@ -6,16 +6,29 @@ import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/field';
 import { Alert } from '@/components/ui/surfaces';
 import { parseMoneyToCents } from '@/lib/money';
-import { ajustarInventarioAction, entradaMercanciaAction } from '@/features/inventory/actions';
+import {
+  ajustarInventarioAction,
+  cambiarActivoProductoAction,
+  cambiarActivoVarianteAction,
+  entradaMercanciaAction,
+} from '@/features/inventory/actions';
 
-type Modo = null | 'entrada' | 'ajuste';
+type Modo = null | 'entrada' | 'ajuste' | 'retirar';
 
 export function AccionesStock({
   variantId,
+  productId,
   etiqueta,
+  nombreProducto,
+  varianteActiva,
+  productoActivo,
 }: {
   variantId: string;
+  productId: string;
   etiqueta: string;
+  nombreProducto: string;
+  varianteActiva: boolean;
+  productoActivo: boolean;
 }) {
   const [modo, setModo] = useState<Modo>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +62,26 @@ export function AccionesStock({
     });
   }
 
+  function cambiarVariante(activo: boolean) {
+    setError(null);
+
+    startTransition(async () => {
+      const res = await cambiarActivoVarianteAction(variantId, activo);
+      if (res.ok) cerrar();
+      else setError(res.error);
+    });
+  }
+
+  function cambiarProducto(activo: boolean) {
+    setError(null);
+
+    startTransition(async () => {
+      const res = await cambiarActivoProductoAction(productId, activo);
+      if (res.ok) cerrar();
+      else setError(res.error);
+    });
+  }
+
   function enviarAjuste(formData: FormData) {
     startTransition(async () => {
       const res = await ajustarInventarioAction({
@@ -68,7 +101,7 @@ export function AccionesStock({
         variant="ghost"
         size="sm"
         aria-label={`Acciones de ${etiqueta}`}
-        onClick={() => setModo('entrada')}
+        onClick={() => setModo(varianteActiva && productoActivo ? 'entrada' : 'retirar')}
       >
         <MoreVertical className="size-4" />
       </Button>
@@ -103,9 +136,74 @@ export function AccionesStock({
           >
             Ajuste
           </button>
+          <button
+            type="button"
+            onClick={() => setModo('retirar')}
+            className={`flex-1 rounded-lg border px-3 py-1.5 text-sm font-medium ${
+              modo === 'retirar'
+                ? 'border-marca bg-marca-suave text-marca'
+                : 'border-borde text-tinta-suave'
+            }`}
+          >
+            Retirar
+          </button>
         </div>
 
-        {modo === 'entrada' ? (
+        {modo === 'retirar' ? (
+          <div className="mt-4 space-y-3">
+            <p className="text-sm text-tinta-suave">
+              Retirar no borra nada. La prenda sale del inventario y del punto de venta, pero sus
+              ventas y su libro de movimientos siguen enteros. Se puede deshacer cuando quieras.
+            </p>
+
+            {!productoActivo ? (
+              <>
+                <p className="rounded-lg bg-lienzo p-3 text-sm text-tinta-suave">
+                  «{nombreProducto}» está retirada entera, con todas sus tallas.
+                </p>
+                <Button className="w-full" disabled={pendiente} onClick={() => cambiarProducto(true)}>
+                  {pendiente ? 'Devolviendo…' : 'Devolver la prenda al mostrador'}
+                </Button>
+              </>
+            ) : (
+              <>
+                {varianteActiva ? (
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    disabled={pendiente}
+                    onClick={() => cambiarVariante(false)}
+                  >
+                    Retirar solo esta talla y color
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full"
+                    disabled={pendiente}
+                    onClick={() => cambiarVariante(true)}
+                  >
+                    Devolver esta talla al mostrador
+                  </Button>
+                )}
+
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  disabled={pendiente}
+                  onClick={() => cambiarProducto(false)}
+                >
+                  Retirar «{nombreProducto}» entera
+                </Button>
+              </>
+            )}
+
+            {error ? <Alert>{error}</Alert> : null}
+
+            <Button type="button" variant="ghost" className="w-full" onClick={cerrar}>
+              Cerrar
+            </Button>
+          </div>
+        ) : modo === 'entrada' ? (
           <form action={enviarEntrada} className="mt-4 space-y-3">
             <div>
               <Label htmlFor="qty">Cuántas entran</Label>

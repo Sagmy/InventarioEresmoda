@@ -4,10 +4,10 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input, Label, Select } from '@/components/ui/field';
+import { FieldError, Input, Label, Select } from '@/components/ui/field';
 import { Alert, Card, CardHeader } from '@/components/ui/surfaces';
 import { parseMoneyToCents } from '@/lib/money';
-import { crearProductoAction } from '@/features/inventory/actions';
+import { crearProductoAction, guardarCategoriaAction } from '@/features/inventory/actions';
 import type { Category, VariantInput } from '@/types/database';
 
 interface FilaVariante {
@@ -30,6 +30,54 @@ export function FormularioProducto({ categorias }: { categorias: Category[] }) {
   const [error, setError] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
   const [filas, setFilas] = useState<FilaVariante[]>([filaVacia(0)]);
+
+  // Solo hacen falta id y nombre: `Category` pide además created_at, que la
+  // categoría recién creada no tiene a mano y a este formulario no le importa.
+  const [listaCategorias, setListaCategorias] = useState<{ id: string; name: string }[]>(categorias);
+  const [categoriaId, setCategoriaId] = useState('');
+  const [creandoCategoria, setCreandoCategoria] = useState(false);
+  const [nombreCategoria, setNombreCategoria] = useState('');
+  const [errorCategoria, setErrorCategoria] = useState<string | null>(null);
+  const [pendienteCategoria, iniciarCategoria] = useTransition();
+
+  function cerrarCategoria() {
+    setCreandoCategoria(false);
+    setNombreCategoria('');
+    setErrorCategoria(null);
+  }
+
+  /**
+   * Crea la categoría y la deja ya seleccionada: quien la está creando a mitad
+   * de dar de alta una prenda la quiere para esa prenda.
+   *
+   * La lista se actualiza en local en vez de recargar del servidor, porque un
+   * refresco aquí borraría las filas de colores y tallas ya escritas.
+   */
+  function anadirCategoria() {
+    const nombre = nombreCategoria.trim();
+
+    if (!nombre) {
+      setErrorCategoria('Escribe un nombre para la categoría.');
+      return;
+    }
+
+    setErrorCategoria(null);
+
+    iniciarCategoria(async () => {
+      const res = await guardarCategoriaAction({ id: null, name: nombre });
+
+      if (!res.ok) {
+        setErrorCategoria(res.error);
+        return;
+      }
+
+      setListaCategorias((prev) =>
+        [...prev, { id: res.data, name: nombre }].sort((a, b) => a.name.localeCompare(b.name, 'es')),
+      );
+      setCategoriaId(res.data);
+      cerrarCategoria();
+    });
+  }
 
   function actualizar(clave: number, campo: keyof FilaVariante, valor: string) {
     setFilas((prev) => prev.map((f) => (f.clave === clave ? { ...f, [campo]: valor } : f)));
@@ -85,8 +133,6 @@ export function FormularioProducto({ categorias }: { categorias: Category[] }) {
       });
     }
 
-    const categoriaId = String(formData.get('category_id') ?? '');
-
     startTransition(async () => {
       const res = await crearProductoAction({
         name: String(formData.get('name') ?? ''),
@@ -121,14 +167,68 @@ export function FormularioProducto({ categorias }: { categorias: Category[] }) {
             <Label htmlFor="category_id" hint="opcional">
               Categoría
             </Label>
-            <Select id="category_id" name="category_id" defaultValue="">
-              <option value="">Sin categoría</option>
-              {categorias.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
+            {creandoCategoria ? (
+              <div className="flex gap-2">
+                <Input
+                  aria-label="Nombre de la categoría"
+                  value={nombreCategoria}
+                  onChange={(e) => setNombreCategoria(e.target.value)}
+                  maxLength={60}
+                  autoFocus
+                  placeholder="Blusas"
+                  onKeyDown={(e) => {
+                    // Enter dentro de un formulario lo envía entero. Aquí lo que
+                    // se quiere es añadir la categoría, no dar de alta la prenda.
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      anadirCategoria();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="shrink-0"
+                  onClick={anadirCategoria}
+                  disabled={pendienteCategoria}
+                >
+                  {pendienteCategoria ? 'Añadiendo…' : 'Añadir'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="shrink-0"
+                  onClick={cerrarCategoria}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Select
+                  id="category_id"
+                  value={categoriaId}
+                  onChange={(e) => setCategoriaId(e.target.value)}
+                >
+                  <option value="">Sin categoría</option>
+                  {listaCategorias.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="shrink-0"
+                  onClick={() => setCreandoCategoria(true)}
+                >
+                  Nueva
+                </Button>
+              </div>
+            )}
+
+            <FieldError>{errorCategoria ?? undefined}</FieldError>
           </div>
         </div>
       </Card>
