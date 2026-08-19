@@ -87,6 +87,28 @@ export async function guardarCategoriaAction(input: unknown): Promise<ActionResu
   return ok(data as string);
 }
 
+/**
+ * Borra una categoría, si la base deja.
+ *
+ * No lleva confirmación aquí: quien decide si se puede borrar es la función de
+ * base, que se niega cuando la categoría tiene prendas dentro y dice cuántas.
+ * Un DELETE directo sí colaría, porque la clave foránea es `on delete set null`
+ * y dejaría todas esas prendas sin categoría en silencio.
+ */
+export async function borrarCategoriaAction(id: unknown): Promise<ActionResult> {
+  const parsed = z.string().uuid().safeParse(id);
+  if (!parsed.success) return fail('Categoría no válida.');
+
+  const supabase = await getSupabaseServerClient();
+
+  const { error } = await supabase.rpc('delete_category', { p_id: parsed.data });
+  if (error) return fail(toUserMessage(error));
+
+  revalidatePath('/inventario/nuevo');
+  revalidatePath('/ajustes');
+  return ok();
+}
+
 export async function crearProductoAction(input: unknown): Promise<ActionResult<string>> {
   const parsed = crearProducto.safeParse(input);
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');

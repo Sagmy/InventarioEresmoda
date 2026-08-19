@@ -5,16 +5,17 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/field';
 import { Alert, EmptyState } from '@/components/ui/surfaces';
-import { guardarCategoriaAction } from '@/features/inventory/actions';
+import { borrarCategoriaAction, guardarCategoriaAction } from '@/features/inventory/actions';
 import type { Category } from '@/types/database';
 
 /**
- * Alta y renombrado de categorías.
+ * Alta, renombrado y borrado de categorías.
  *
- * No hay borrado a propósito: las prendas apuntan a su categoría, y quitar una
- * en uso dejaría el inventario descolocado sin que nadie se entere. Renombrar
- * cubre el caso real, que es haberla escrito mal o querer llamarla de otra
- * forma.
+ * El borrado pide confirmación en el sitio, pero quien decide de verdad es la
+ * base: `delete_category` se niega si la categoría tiene prendas dentro y dice
+ * cuántas son. Aquí no se comprueba nada de eso por nuestra cuenta, porque el
+ * recuento podría haber cambiado entre que se pintó la lista y se pulsó el
+ * botón.
  */
 export function GestionCategorias({ categorias }: { categorias: Category[] }) {
   const router = useRouter();
@@ -23,6 +24,7 @@ export function GestionCategorias({ categorias }: { categorias: Category[] }) {
   const [nombreEditado, setNombreEditado] = useState('');
   const [nombreNuevo, setNombreNuevo] = useState('');
   const [pendiente, iniciar] = useTransition();
+  const [confirmando, setConfirmando] = useState<string | null>(null);
 
   function guardar(id: string | null, valor: string, alTerminar: () => void) {
     const nombre = valor.trim();
@@ -49,7 +51,23 @@ export function GestionCategorias({ categorias }: { categorias: Category[] }) {
   function abrirEdicion(categoria: Category) {
     setEditando(categoria.id);
     setNombreEditado(categoria.name);
+    setConfirmando(null);
     setError(null);
+  }
+
+  function borrar(id: string) {
+    setError(null);
+
+    iniciar(async () => {
+      const res = await borrarCategoriaAction(id);
+
+      if (res.ok) {
+        setConfirmando(null);
+        router.refresh();
+      } else {
+        setError(res.error);
+      }
+    });
   }
 
   return (
@@ -98,14 +116,39 @@ export function GestionCategorias({ categorias }: { categorias: Category[] }) {
               ) : (
                 <div className="flex items-center justify-between gap-3">
                   <span className="min-w-0 font-medium text-tinta">{c.name}</span>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => abrirEdicion(c)}
-                  >
-                    Renombrar
-                  </Button>
+
+                  {confirmando === c.id ? (
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="text-xs text-tinta-suave">¿Borrar?</span>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        disabled={pendiente}
+                        onClick={() => borrar(c.id)}
+                      >
+                        {pendiente ? 'Borrando…' : 'Sí'}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setConfirmando(null)}>
+                        No
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex shrink-0 gap-2">
+                      <Button variant="secondary" size="sm" onClick={() => abrirEdicion(c)}>
+                        Renombrar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setConfirmando(c.id);
+                          setError(null);
+                        }}
+                      >
+                        Borrar
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </li>
