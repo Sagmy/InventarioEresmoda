@@ -11,6 +11,7 @@ const FILTROS = [
   { valor: 'agotado', etiqueta: 'Agotadas' },
   { valor: 'bajo', etiqueta: 'Poco stock' },
   { valor: 'apartado', etiqueta: 'Con apartados' },
+  { valor: 'retiradas', etiqueta: 'Retiradas' },
 ] as const;
 
 export function BuscadorInventario({

@@ -21,11 +21,19 @@ export default async function InventarioPage({
 
   const supabase = await getSupabaseServerClient();
 
-  let consulta = supabase
-    .from('v_stock')
-    .select('*')
-    .eq('is_active', true)
-    .eq('product_is_active', true);
+  // Sin esta vista no habría vuelta atrás: una prenda retirada desaparece del
+  // listado, y sin poder listarlas nadie podría reactivarla nunca.
+  const verRetiradas = filtro === 'retiradas';
+
+  let consulta = supabase.from('v_stock').select('*');
+
+  if (verRetiradas) {
+    // Retirada puede serlo la variante sola o la prenda entera: cualquiera de
+    // las dos la saca del mostrador.
+    consulta = consulta.or('is_active.eq.false,product_is_active.eq.false');
+  } else {
+    consulta = consulta.eq('is_active', true).eq('product_is_active', true);
+  }
 
   if (q && q.trim() !== '') {
     // El buscador cubre nombre, color, talla y SKU de una sola vez.
@@ -78,13 +86,17 @@ export default async function InventarioPage({
       {filas.length === 0 ? (
         <Card>
           <EmptyState
-            title={q ? 'Sin resultados' : 'Todavía no hay prendas'}
+            title={
+              q ? 'Sin resultados' : verRetiradas ? 'No hay prendas retiradas' : 'Todavía no hay prendas'
+            }
             description={
               q
                 ? 'Prueba con otro nombre, color o código.'
-                : esAdmin
-                  ? 'Agrega tu primera prenda para empezar a vender.'
-                  : 'Pídele a un administrador que cargue el inventario.'
+                : verRetiradas
+                  ? 'Aquí aparecen las que saques del mostrador, por si hay que devolverlas.'
+                  : esAdmin
+                    ? 'Agrega tu primera prenda para empezar a vender.'
+                    : 'Pídele a un administrador que cargue el inventario.'
             }
           />
         </Card>
@@ -111,7 +123,14 @@ export default async function InventarioPage({
                     va al extremo derecho de la fila. */}
                 {esAdmin ? (
                   <div className="shrink-0 sm:hidden">
-                    <AccionesStock variantId={fila.variant_id} etiqueta={fila.label} />
+                    <AccionesStock
+                    variantId={fila.variant_id}
+                    productId={fila.product_id}
+                    etiqueta={fila.label}
+                    nombreProducto={fila.product_name}
+                    varianteActiva={fila.is_active}
+                    productoActivo={fila.product_is_active}
+                  />
                   </div>
                 ) : null}
               </div>
@@ -127,7 +146,14 @@ export default async function InventarioPage({
 
               {esAdmin ? (
                 <div className="hidden sm:block">
-                  <AccionesStock variantId={fila.variant_id} etiqueta={fila.label} />
+                  <AccionesStock
+                    variantId={fila.variant_id}
+                    productId={fila.product_id}
+                    etiqueta={fila.label}
+                    nombreProducto={fila.product_name}
+                    varianteActiva={fila.is_active}
+                    productoActivo={fila.product_is_active}
+                  />
                 </div>
               ) : null}
             </div>

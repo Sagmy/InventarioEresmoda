@@ -174,6 +174,52 @@ export async function ajustarInventarioAction(input: unknown): Promise<ActionRes
   return ok();
 }
 
+/**
+ * Retira o devuelve al mostrador una talla/color concreto.
+ *
+ * Retirar no borra nada: la variante desaparece del inventario y del punto de
+ * venta, pero su historial de ventas y su libro de movimientos siguen enteros.
+ * Borrarla de verdad sería imposible de todos modos, porque `order_items` y
+ * `stock_movements` la referencian con `on delete restrict`, y ese libro es la
+ * auditoría que permite explicar por qué hay 3 y no 5.
+ */
+export async function cambiarActivoVarianteAction(
+  variantId: string,
+  activo: boolean,
+): Promise<ActionResult> {
+  const supabase = await getSupabaseServerClient();
+
+  // Los demás parámetros van vacíos a propósito: la función de base los recoge
+  // con coalesce, así que talla, color y precio se quedan como estaban.
+  const { error } = await supabase.rpc('update_variant', {
+    p_id: variantId,
+    p_is_active: activo,
+  });
+
+  if (error) return fail(toUserMessage(error));
+
+  revalidatePath('/inventario');
+  return ok();
+}
+
+/** Lo mismo, pero para la prenda entera y todas sus tallas de una vez. */
+export async function cambiarActivoProductoAction(
+  productId: string,
+  activo: boolean,
+): Promise<ActionResult> {
+  const supabase = await getSupabaseServerClient();
+
+  const { error } = await supabase.rpc('update_product', {
+    p_id: productId,
+    p_is_active: activo,
+  });
+
+  if (error) return fail(toUserMessage(error));
+
+  revalidatePath('/inventario');
+  return ok();
+}
+
 export async function editarVarianteAction(input: unknown): Promise<ActionResult> {
   const parsed = editarVariante.safeParse(input);
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');
