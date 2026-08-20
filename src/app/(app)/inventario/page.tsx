@@ -55,6 +55,18 @@ export default async function InventarioPage({
 
   const totalApartado = filas.reduce((suma, f) => suma + f.qty_reserved, 0);
 
+  // Se consultan aparte y no se sacan de `filas`: el listado viene filtrado y
+  // limitado, así que sugeriría solo los colores de lo que hay en pantalla.
+  const { data: variantes } = await supabase.from('product_variants').select('color');
+
+  const coloresUsados = [
+    ...new Set(
+      (variantes ?? [])
+        .map((v) => v.color?.trim())
+        .filter((c): c is string => Boolean(c) && c !== 'Único'),
+    ),
+  ].sort((a, b) => a.localeCompare(b, 'es'));
+
   // Las fotos se piden aparte en vez de meterlas en v_stock: esa vista la usa
   // también el punto de venta, y no conviene engordarla para una miniatura.
   const idsProducto = [...new Set(filas.map((f) => f.product_id))];
@@ -176,6 +188,8 @@ export default async function InventarioPage({
                     nombreProducto={fila.product_name}
                     varianteActiva={fila.is_active}
                     productoActivo={fila.product_is_active}
+                    precioActual={fila.price_cents}
+                    coloresUsados={coloresUsados}
                   />
                   </div>
                 ) : null}
@@ -199,6 +213,8 @@ export default async function InventarioPage({
                     nombreProducto={fila.product_name}
                     varianteActiva={fila.is_active}
                     productoActivo={fila.product_is_active}
+                    precioActual={fila.price_cents}
+                    coloresUsados={coloresUsados}
                   />
                 </div>
               ) : null}

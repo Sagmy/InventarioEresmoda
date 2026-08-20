@@ -48,6 +48,15 @@ const crearProducto = z.object({
   images: z.array(fotoProducto).min(1, 'La prenda necesita al menos una foto.'),
 });
 
+const nuevaVariante = z.object({
+  product_id: z.string().uuid(),
+  size: z.string().trim().min(1, 'Escribe la talla.').max(30),
+  color: z.string().trim().min(1, 'Escribe el color.').max(40),
+  price_cents: z.number().int().nonnegative('El precio no puede ser negativo.'),
+  cost_cents: z.number().int().nonnegative().default(0),
+  qty: z.number().int().nonnegative().default(0),
+});
+
 const entradaMercancia = z.object({
   variant_id: z.string().uuid(),
   qty: z.number().int().positive('La cantidad debe ser mayor que cero.'),
@@ -177,6 +186,47 @@ export async function crearProductoAction(input: unknown): Promise<ActionResult<
  * tenías 2 camisas a $10 y entran 3 a $15, el costo pasa a $13 y no a $15.
  * Usar el último costo distorsionaría el margen del inventario viejo.
  */
+/**
+ * Añade una talla o un color a una prenda que ya existe.
+ *
+ * Es lo que hay que usar cuando llega el mismo short en otro color: cargarlo
+ * como prenda nueva duplicaría el nombre y partiría las fotos entre dos fichas.
+ * La variante nueva hereda nombre, marca, categoría y fotos de la prenda.
+ */
+export async function crearVarianteAction(input: unknown): Promise<ActionResult<string>> {
+  const parsed = nuevaVariante.safeParse(input);
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');
+
+  const v = parsed.data;
+  const supabase = await getSupabaseServerClient();
+
+  const { data, error } = await supabase.rpc('create_variant', {
+    p_product_id: v.product_id,
+    p_price_cents: v.price_cents,
+    p_size: v.size,
+    p_color: v.color,
+    p_cost_cents: v.cost_cents,
+    p_qty: v.qty,
+  });
+
+  if (error) {
+    // `variant_unique_combo` impide dos veces la misma talla y color en la misma
+    // prenda. Su mensaje crudo delata el nombre de la restricción y no dice lo
+    // único que importa: que para más unidades el camino es Entrada, que sí deja
+    // renglón en el libro de movimientos.
+    if (error.code === '23505') {
+      return fail(
+        `Esta prenda ya tiene ${v.color} · ${v.size}. Si te llegaron más unidades, usa Entrada.`,
+      );
+    }
+
+    return fail(toUserMessage(error));
+  }
+
+  revalidatePath('/inventario');
+  return ok(data as string);
+}
+
 export async function entradaMercanciaAction(input: unknown): Promise<ActionResult> {
   const parsed = entradaMercancia.safeParse(input);
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');
