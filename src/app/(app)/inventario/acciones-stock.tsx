@@ -9,12 +9,13 @@ import { GestorFotos } from '@/features/inventory/components/gestor-fotos';
 import { parseMoneyToCents } from '@/lib/money';
 import {
   ajustarInventarioAction,
+  crearVarianteAction,
   cambiarActivoProductoAction,
   cambiarActivoVarianteAction,
   entradaMercanciaAction,
 } from '@/features/inventory/actions';
 
-type Modo = null | 'entrada' | 'ajuste' | 'fotos' | 'retirar';
+type Modo = null | 'entrada' | 'ajuste' | 'variante' | 'fotos' | 'retirar';
 
 export function AccionesStock({
   variantId,
@@ -23,6 +24,8 @@ export function AccionesStock({
   nombreProducto,
   varianteActiva,
   productoActivo,
+  precioActual,
+  coloresUsados,
 }: {
   variantId: string;
   productId: string;
@@ -30,6 +33,8 @@ export function AccionesStock({
   nombreProducto: string;
   varianteActiva: boolean;
   productoActivo: boolean;
+  precioActual: number;
+  coloresUsados: string[];
 }) {
   const [modo, setModo] = useState<Modo>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +61,39 @@ export function AccionesStock({
         qty,
         unit_cost_cents: costo,
         note: String(formData.get('note') ?? '') || undefined,
+      });
+
+      if (res.ok) cerrar();
+      else setError(res.error);
+    });
+  }
+
+  function enviarVariante(formData: FormData) {
+    const precio = parseMoneyToCents(String(formData.get('precio') ?? ''));
+
+    if (precio === null) {
+      setError('El precio no es un monto válido.');
+      return;
+    }
+
+    const costoTexto = String(formData.get('costo') ?? '').trim();
+    const costo = costoTexto === '' ? 0 : parseMoneyToCents(costoTexto);
+
+    if (costo === null) {
+      setError('El costo no es un monto válido.');
+      return;
+    }
+
+    setError(null);
+
+    startTransition(async () => {
+      const res = await crearVarianteAction({
+        product_id: productId,
+        size: String(formData.get('size') ?? ''),
+        color: String(formData.get('color') ?? ''),
+        price_cents: precio,
+        cost_cents: costo,
+        qty: Number(formData.get('cantidad')) || 0,
       });
 
       if (res.ok) cerrar();
@@ -114,11 +152,11 @@ export function AccionesStock({
       <div className="w-full max-w-sm rounded-caja border border-borde bg-superficie p-5">
         <h3 className="font-semibold text-tinta">{etiqueta}</h3>
 
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setModo('entrada')}
-            className={`flex-1 rounded-lg border px-2 py-1.5 text-sm font-medium ${
+            className={`flex-1 basis-24 rounded-lg border px-2 py-1.5 text-sm font-medium ${
               modo === 'entrada'
                 ? 'border-marca bg-marca-suave text-marca'
                 : 'border-borde text-tinta-suave'
@@ -129,7 +167,7 @@ export function AccionesStock({
           <button
             type="button"
             onClick={() => setModo('ajuste')}
-            className={`flex-1 rounded-lg border px-2 py-1.5 text-sm font-medium ${
+            className={`flex-1 basis-24 rounded-lg border px-2 py-1.5 text-sm font-medium ${
               modo === 'ajuste'
                 ? 'border-marca bg-marca-suave text-marca'
                 : 'border-borde text-tinta-suave'
@@ -139,8 +177,19 @@ export function AccionesStock({
           </button>
           <button
             type="button"
+            onClick={() => setModo('variante')}
+            className={`flex-1 basis-24 rounded-lg border px-2 py-1.5 text-sm font-medium ${
+              modo === 'variante'
+                ? 'border-marca bg-marca-suave text-marca'
+                : 'border-borde text-tinta-suave'
+            }`}
+          >
+            Añadir
+          </button>
+          <button
+            type="button"
             onClick={() => setModo('fotos')}
-            className={`flex-1 rounded-lg border px-2 py-1.5 text-sm font-medium ${
+            className={`flex-1 basis-24 rounded-lg border px-2 py-1.5 text-sm font-medium ${
               modo === 'fotos'
                 ? 'border-marca bg-marca-suave text-marca'
                 : 'border-borde text-tinta-suave'
@@ -151,7 +200,7 @@ export function AccionesStock({
           <button
             type="button"
             onClick={() => setModo('retirar')}
-            className={`flex-1 rounded-lg border px-2 py-1.5 text-sm font-medium ${
+            className={`flex-1 basis-24 rounded-lg border px-2 py-1.5 text-sm font-medium ${
               modo === 'retirar'
                 ? 'border-marca bg-marca-suave text-marca'
                 : 'border-borde text-tinta-suave'
@@ -161,7 +210,89 @@ export function AccionesStock({
           </button>
         </div>
 
-        {modo === 'fotos' ? (
+        {modo === 'variante' ? (
+          <form action={enviarVariante} className="mt-4 space-y-3">
+            <p className="text-sm text-tinta-suave">
+              Añade otra talla o color a «{nombreProducto}». Hereda su nombre, marca, categoría y
+              fotos, así que la página pública la agrupa con el resto.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="color-nuevo">Color</Label>
+                <Input
+                  id="color-nuevo"
+                  name="color"
+                  list="colores-inventario"
+                  required
+                  maxLength={40}
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="size-nuevo">Talla</Label>
+                <Input id="size-nuevo" name="size" list="tallas-inventario" required maxLength={30} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                {/* Casi siempre es el mismo precio que la talla desde la que se
+                    abrió el menú, así que viene puesto y se corrige si hace falta. */}
+                <Label htmlFor="precio-nuevo">Precio</Label>
+                <Input
+                  id="precio-nuevo"
+                  name="precio"
+                  inputMode="decimal"
+                  required
+                  defaultValue={(precioActual / 100).toFixed(2)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="costo-nuevo" hint="opcional">
+                  Costo
+                </Label>
+                <Input id="costo-nuevo" name="costo" inputMode="decimal" placeholder="0.00" />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="cantidad-nueva">Cuántas entran</Label>
+              <Input
+                id="cantidad-nueva"
+                name="cantidad"
+                type="number"
+                min={0}
+                defaultValue={0}
+              />
+            </div>
+
+            <datalist id="colores-inventario">
+              {coloresUsados.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+
+            <datalist id="tallas-inventario">
+              {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Única'].map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
+
+            {error ? <Alert>{error}</Alert> : null}
+
+            <div className="flex gap-2 pt-1">
+              <Button type="button" variant="secondary" className="flex-1" onClick={cerrar}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="flex-1" disabled={pendiente}>
+                {pendiente ? 'Añadiendo…' : 'Añadir'}
+              </Button>
+            </div>
+          </form>
+        ) : modo === 'fotos' ? (
           <>
             <p className="mt-3 text-xs text-tinta-tenue">
               Las fotos son de «{nombreProducto}» entera, no solo de esta talla. Asigna cada una a

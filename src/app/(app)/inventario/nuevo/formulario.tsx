@@ -26,7 +26,13 @@ function filaVacia(clave: number): FilaVariante {
   return { clave, color: '', size: '', precio: '', costo: '', cantidad: '0' };
 }
 
-export function FormularioProducto({ categorias }: { categorias: Category[] }) {
+export function FormularioProducto({
+  categorias,
+  coloresUsados,
+}: {
+  categorias: Category[];
+  coloresUsados: string[];
+}) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
@@ -284,6 +290,7 @@ export function FormularioProducto({ categorias }: { categorias: Category[] }) {
                   <Input
                     value={fila.color}
                     onChange={(e) => actualizar(fila.clave, 'color', e.target.value)}
+                    list="colores"
                     placeholder="Blanco"
                     maxLength={40}
                   />
@@ -336,6 +343,15 @@ export function FormularioProducto({ categorias }: { categorias: Category[] }) {
             </div>
           ))}
         </div>
+
+        {/* Los colores que ya existen en el inventario. Escribirlos de nuevo a
+            mano es lo que produce «Azul» y «azul» conviviendo, y con ellos dos
+            catálogos distintos para la misma prenda. */}
+        <datalist id="colores">
+          {coloresUsados.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
 
         <datalist id="tallas">
           {TALLAS_SUGERIDAS.map((t) => (
