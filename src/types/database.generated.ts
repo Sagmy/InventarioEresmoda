@@ -359,6 +359,58 @@ export type Database = {
           },
         ]
       }
+      product_images: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          product_id: string
+          sort_order: number
+          storage_path: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          product_id: string
+          sort_order?: number
+          storage_path: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          product_id?: string
+          sort_order?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_catalogo_publico"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       product_variants: {
         Row: {
           color: string
@@ -409,6 +461,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_catalogo_publico"
+            referencedColumns: ["product_id"]
           },
         ]
       }
@@ -466,6 +525,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          email: string | null
           full_name: string
           id: string
           is_active: boolean
@@ -474,6 +534,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           full_name: string
           id: string
           is_active?: boolean
@@ -482,6 +543,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           full_name?: string
           id?: string
           is_active?: boolean
@@ -870,6 +932,20 @@ export type Database = {
         }
         Relationships: []
       }
+      v_catalogo_publico: {
+        Row: {
+          brand: string | null
+          category_name: string | null
+          color: string | null
+          images: Json | null
+          is_available: boolean | null
+          price_from_cents: number | null
+          product_id: string | null
+          product_name: string | null
+          sizes_available: string[] | null
+        }
+        Relationships: []
+      }
       v_collections_due: {
         Row: {
           alert_level: string | null
@@ -1063,6 +1139,7 @@ export type Database = {
           created_at: string | null
           is_active: boolean | null
           is_low_stock: boolean | null
+          is_out_of_stock: boolean | null
           label: string | null
           price_cents: number | null
           product_id: string | null
@@ -1083,6 +1160,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_catalogo_publico"
+            referencedColumns: ["product_id"]
           },
           {
             foreignKeyName: "products_category_id_fkey"
@@ -1141,6 +1225,7 @@ export type Database = {
           p_brand?: string
           p_category_id?: string
           p_description?: string
+          p_images?: Json
           p_name: string
           p_variants: Json
         }
@@ -1159,6 +1244,8 @@ export type Database = {
         Returns: string
       }
       dashboard_summary: { Args: never; Returns: Json }
+      delete_category: { Args: { p_id: string }; Returns: undefined }
+      delete_customer: { Args: { p_id: string }; Returns: undefined }
       format_cents: { Args: { p_cents: number }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
@@ -1238,6 +1325,10 @@ export type Database = {
       }
       require_admin: { Args: never; Returns: string }
       require_staff: { Args: never; Returns: string }
+      set_customer_active: {
+        Args: { p_active: boolean; p_id: string }
+        Returns: undefined
+      }
       set_user_active: {
         Args: { p_active: boolean; p_user_id: string }
         Returns: undefined
