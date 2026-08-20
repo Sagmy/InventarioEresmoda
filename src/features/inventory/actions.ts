@@ -33,6 +33,11 @@ const fotoProducto = z.object({
   color: z.string().trim().max(40).nullable().default(null),
 });
 
+const guardarFotosProducto = z.object({
+  product_id: z.string().uuid(),
+  images: z.array(fotoProducto).min(1, 'La prenda necesita al menos una foto.'),
+});
+
 const crearProducto = z.object({
   name: z.string().trim().min(1, 'El producto necesita un nombre.').max(160),
   description: z.string().trim().max(2000).optional(),
@@ -116,6 +121,31 @@ export async function borrarCategoriaAction(id: unknown): Promise<ActionResult> 
 
   revalidatePath('/inventario/nuevo');
   revalidatePath('/ajustes');
+  return ok();
+}
+
+/**
+ * Reemplaza el juego completo de fotos de una prenda ya cargada.
+ *
+ * Se manda la lista entera y no "añade esta, borra aquella": el orden del array
+ * es el orden de la landing, y mandarlo completo evita que dos ediciones
+ * simultáneas dejen las posiciones descolocadas.
+ */
+export async function guardarFotosProductoAction(input: unknown): Promise<ActionResult> {
+  const parsed = guardarFotosProducto.safeParse(input);
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');
+
+  const v = parsed.data;
+  const supabase = await getSupabaseServerClient();
+
+  const { error } = await supabase.rpc('set_product_images', {
+    p_product_id: v.product_id,
+    p_images: v.images.map((f) => (f.color ? { path: f.path, color: f.color } : { path: f.path })),
+  });
+
+  if (error) return fail(toUserMessage(error));
+
+  revalidatePath('/inventario');
   return ok();
 }
 

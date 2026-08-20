@@ -42,10 +42,21 @@ export function SubidorFotos({
   fotos,
   onCambio,
   colores,
+  borrarDelBucketAlQuitar = true,
 }: {
   fotos: FotoSubida[];
   onCambio: (fotos: FotoSubida[]) => void;
   colores: string[];
+  /**
+   * Al dar de alta una prenda, quitar una foto borra el archivo en el acto: no
+   * hay ninguna fila que lo apunte todavía.
+   *
+   * Al EDITAR una prenda ya guardada hay que ponerlo en false. Ahí la foto sí
+   * tiene fila en la base, y borrar el archivo antes de guardar dejaría esa fila
+   * apuntando a un archivo que ya no existe si el guardado falla o se cancela.
+   * El precio es dejar algún archivo suelto en el bucket, que no molesta a nadie.
+   */
+  borrarDelBucketAlQuitar?: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [subiendo, iniciarSubida] = useTransition();
@@ -98,6 +109,8 @@ export function SubidorFotos({
 
   function quitar(path: string) {
     onCambio(fotos.filter((f) => f.path !== path));
+
+    if (!borrarDelBucketAlQuitar) return;
 
     // Se borra del bucket sin esperar respuesta: si fallara, el archivo queda
     // suelto sin que nada lo apunte, y no es motivo para bloquear el formulario.

@@ -8,7 +8,7 @@ import { FieldError, Input, Label, Select } from '@/components/ui/field';
 import { Alert, Card, CardHeader } from '@/components/ui/surfaces';
 import { parseMoneyToCents } from '@/lib/money';
 import { crearProductoAction, guardarCategoriaAction } from '@/features/inventory/actions';
-import { SubidorFotos, type FotoSubida } from './fotos';
+import { SubidorFotos, type FotoSubida } from '@/features/inventory/components/subidor-fotos';
 import type { Category, VariantInput } from '@/types/database';
 
 interface FilaVariante {

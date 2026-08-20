@@ -521,6 +521,10 @@ export type Database = {
         };
         Returns: string;
       };
+      set_product_images: {
+        Args: { p_product_id: string; p_images: { path: string; color?: string | undefined }[] };
+        Returns: undefined;
+      };
       update_product: {
         Args: {
           p_id: string;
