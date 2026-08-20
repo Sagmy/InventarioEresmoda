@@ -25,12 +25,27 @@ const guardarCategoria = z.object({
   name: z.string().trim().min(1, 'La categoría necesita un nombre.').max(60),
 });
 
+const fotoProducto = z.object({
+  // Ruta dentro del bucket, no URL: la URL pública se puede reconstruir siempre
+  // a partir de la ruta, y guardarla ataría la base al dominio de Supabase.
+  path: z.string().trim().min(1).max(400),
+  // Null = la foto vale para todos los colores.
+  color: z.string().trim().max(40).nullable().default(null),
+});
+
+const guardarFotosProducto = z.object({
+  product_id: z.string().uuid(),
+  images: z.array(fotoProducto).min(1, 'La prenda necesita al menos una foto.'),
+});
+
 const crearProducto = z.object({
   name: z.string().trim().min(1, 'El producto necesita un nombre.').max(160),
   description: z.string().trim().max(2000).optional(),
   brand: z.string().trim().max(80).optional(),
   category_id: z.string().uuid().nullable().default(null),
   variants: z.array(variante).min(1, 'Agrega al menos una talla o color.'),
+  // La prenda alimenta la página pública, y una tarjeta sin foto no se vende.
+  images: z.array(fotoProducto).min(1, 'La prenda necesita al menos una foto.'),
 });
 
 const entradaMercancia = z.object({
@@ -109,6 +124,31 @@ export async function borrarCategoriaAction(id: unknown): Promise<ActionResult> 
   return ok();
 }
 
+/**
+ * Reemplaza el juego completo de fotos de una prenda ya cargada.
+ *
+ * Se manda la lista entera y no "añade esta, borra aquella": el orden del array
+ * es el orden de la landing, y mandarlo completo evita que dos ediciones
+ * simultáneas dejen las posiciones descolocadas.
+ */
+export async function guardarFotosProductoAction(input: unknown): Promise<ActionResult> {
+  const parsed = guardarFotosProducto.safeParse(input);
+  if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');
+
+  const v = parsed.data;
+  const supabase = await getSupabaseServerClient();
+
+  const { error } = await supabase.rpc('set_product_images', {
+    p_product_id: v.product_id,
+    p_images: v.images.map((f) => (f.color ? { path: f.path, color: f.color } : { path: f.path })),
+  });
+
+  if (error) return fail(toUserMessage(error));
+
+  revalidatePath('/inventario');
+  return ok();
+}
+
 export async function crearProductoAction(input: unknown): Promise<ActionResult<string>> {
   const parsed = crearProducto.safeParse(input);
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Revisa los datos.');
@@ -122,6 +162,8 @@ export async function crearProductoAction(input: unknown): Promise<ActionResult<
     p_description: v.description ?? null,
     p_brand: v.brand ?? null,
     p_category_id: v.category_id,
+    // El orden del array manda: la primera es la principal de la landing.
+    p_images: v.images.map((f) => (f.color ? { path: f.path, color: f.color } : { path: f.path })),
   });
 
   if (error) return fail(toUserMessage(error));

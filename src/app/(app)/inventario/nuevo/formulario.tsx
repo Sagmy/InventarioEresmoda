@@ -8,6 +8,7 @@ import { FieldError, Input, Label, Select } from '@/components/ui/field';
 import { Alert, Card, CardHeader } from '@/components/ui/surfaces';
 import { parseMoneyToCents } from '@/lib/money';
 import { crearProductoAction, guardarCategoriaAction } from '@/features/inventory/actions';
+import { SubidorFotos, type FotoSubida } from '@/features/inventory/components/subidor-fotos';
 import type { Category, VariantInput } from '@/types/database';
 
 interface FilaVariante {
@@ -39,6 +40,12 @@ export function FormularioProducto({ categorias }: { categorias: Category[] }) {
   const [nombreCategoria, setNombreCategoria] = useState('');
   const [errorCategoria, setErrorCategoria] = useState<string | null>(null);
   const [pendienteCategoria, iniciarCategoria] = useTransition();
+  const [fotos, setFotos] = useState<FotoSubida[]>([]);
+
+  // Los colores que ya escribiste abajo son los que se pueden asignar a cada
+  // foto. Se recalculan en cada render a propósito: si corriges un color, el
+  // desplegable de las fotos tiene que seguirte.
+  const coloresDeLasFilas = [...new Set(filas.map((f) => f.color.trim()).filter(Boolean))];
 
   function cerrarCategoria() {
     setCreandoCategoria(false);
@@ -133,6 +140,11 @@ export function FormularioProducto({ categorias }: { categorias: Category[] }) {
       });
     }
 
+    if (fotos.length === 0) {
+      setError('Añade al menos una foto de la prenda: es la que verá la página pública.');
+      return;
+    }
+
     startTransition(async () => {
       const res = await crearProductoAction({
         name: String(formData.get('name') ?? ''),
@@ -140,6 +152,7 @@ export function FormularioProducto({ categorias }: { categorias: Category[] }) {
         brand: String(formData.get('brand') ?? '') || undefined,
         category_id: categoriaId || null,
         variants,
+        images: fotos.map((f) => ({ path: f.path, color: f.color })),
       });
 
       if (res.ok) router.push('/inventario');
@@ -329,6 +342,10 @@ export function FormularioProducto({ categorias }: { categorias: Category[] }) {
             <option key={t} value={t} />
           ))}
         </datalist>
+      </Card>
+
+      <Card className="p-4">
+        <SubidorFotos fotos={fotos} onCambio={setFotos} colores={coloresDeLasFilas} />
       </Card>
 
       {error ? <Alert>{error}</Alert> : null}

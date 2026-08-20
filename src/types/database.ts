@@ -84,6 +84,34 @@ export type Category = {
   created_at: string;
 }
 
+export type ProductImage = {
+  id: string;
+  product_id: string;
+  /** Null = foto genérica de la prenda, válida para cualquier color. */
+  color: string | null;
+  /** Ruta dentro del bucket `prendas`, no una URL completa. */
+  storage_path: string;
+  /** 0 es la principal. */
+  sort_order: number;
+  created_at: string;
+  created_by: string | null;
+}
+
+/** Fila de `v_catalogo_publico`: lo único que puede leer la llave anónima. */
+export type CatalogoPublicoRow = {
+  product_id: string;
+  product_name: string;
+  brand: string | null;
+  category_name: string | null;
+  color: string;
+  /** El precio más bajo del color: la landing anuncia "desde". */
+  price_from_cents: number;
+  is_available: boolean;
+  sizes_available: string[];
+  /** Rutas del bucket, en orden: la primera es la principal. */
+  images: string[];
+}
+
 export type Product = {
   id: string;
   name: string;
@@ -392,6 +420,7 @@ export type Database = {
       categories: ReadOnly<Category>;
       products: ReadOnly<Product>;
       product_variants: ReadOnly<ProductVariant>;
+      product_images: ReadOnly<ProductImage>;
       customers: ReadOnly<Customer>;
       orders: ReadOnly<Order>;
       order_items: ReadOnly<OrderItem>;
@@ -408,6 +437,8 @@ export type Database = {
       v_order_items: ReadOnly<OrderItemRow>;
       v_order_balances: ReadOnly<OrderBalanceRow>;
       v_collections_due: ReadOnly<CollectionRow>;
+      /** Abierta al rol anónimo: es la que alimenta la landing page. */
+      v_catalogo_publico: ReadOnly<CatalogoPublicoRow>;
     };
     Functions: {
       create_order: {
@@ -486,8 +517,13 @@ export type Database = {
           p_description?: string | null | undefined;
           p_brand?: string | null | undefined;
           p_category_id?: string | null | undefined;
+          p_images?: { path: string; color?: string | undefined }[] | undefined;
         };
         Returns: string;
+      };
+      set_product_images: {
+        Args: { p_product_id: string; p_images: { path: string; color?: string | undefined }[] };
+        Returns: undefined;
       };
       update_product: {
         Args: {

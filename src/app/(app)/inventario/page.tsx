@@ -8,7 +8,7 @@ import { Card, EmptyState } from '@/components/ui/surfaces';
 import { StockNumbers } from '@/components/ui/status';
 import { BuscadorInventario } from './buscador';
 import { AccionesStock } from './acciones-stock';
-import type { StockRow } from '@/types/database';
+import type { ProductImage, StockRow } from '@/types/database';
 
 export default async function InventarioPage({
   searchParams,
@@ -54,6 +54,32 @@ export default async function InventarioPage({
   const filas = (data ?? []) as StockRow[];
 
   const totalApartado = filas.reduce((suma, f) => suma + f.qty_reserved, 0);
+
+  // Las fotos se piden aparte en vez de meterlas en v_stock: esa vista la usa
+  // también el punto de venta, y no conviene engordarla para una miniatura.
+  const idsProducto = [...new Set(filas.map((f) => f.product_id))];
+
+  const { data: imagenes } = idsProducto.length
+    ? await supabase
+        .from('product_images')
+        .select('*')
+        .in('product_id', idsProducto)
+        .order('sort_order')
+    : { data: [] };
+
+  // Gana la foto del color exacto; la genérica (color null) queda de respaldo.
+  const portadas = new Map<string, string>();
+
+  for (const img of (imagenes ?? []) as ProductImage[]) {
+    const claveColor = `${img.product_id}·${img.color ?? ''}`;
+    if (!portadas.has(claveColor)) portadas.set(claveColor, img.storage_path);
+  }
+
+  const portadaDe = (fila: StockRow) =>
+    portadas.get(`${fila.product_id}·${fila.color}`) ?? portadas.get(`${fila.product_id}·`);
+
+  const urlPublica = (ruta: string) =>
+    supabase.storage.from('prendas').getPublicUrl(ruta).data.publicUrl;
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
@@ -108,6 +134,26 @@ export default async function InventarioPage({
                sola línea, que aprovecha mejor la pantalla grande. */
             <div key={fila.variant_id} className="px-4 py-3 sm:flex sm:items-center sm:gap-4">
               <div className="flex items-start gap-3 sm:min-w-0 sm:flex-1">
+                {(() => {
+                  const ruta = portadaDe(fila);
+
+                  return ruta ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={urlPublica(ruta)}
+                      alt=""
+                      className="size-12 shrink-0 rounded-lg border border-borde object-cover"
+                    />
+                  ) : (
+                    <div
+                      aria-hidden
+                      className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-borde text-[10px] text-tinta-tenue"
+                    >
+                      sin foto
+                    </div>
+                  );
+                })()}
+
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-tinta">{fila.product_name}</p>
                   <p className="text-sm text-tinta-suave">

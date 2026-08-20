@@ -5,6 +5,7 @@ import { MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/field';
 import { Alert } from '@/components/ui/surfaces';
+import { GestorFotos } from '@/features/inventory/components/gestor-fotos';
 import { parseMoneyToCents } from '@/lib/money';
 import {
   ajustarInventarioAction,
@@ -13,7 +14,7 @@ import {
   entradaMercanciaAction,
 } from '@/features/inventory/actions';
 
-type Modo = null | 'entrada' | 'ajuste' | 'retirar';
+type Modo = null | 'entrada' | 'ajuste' | 'fotos' | 'retirar';
 
 export function AccionesStock({
   variantId,
@@ -117,7 +118,7 @@ export function AccionesStock({
           <button
             type="button"
             onClick={() => setModo('entrada')}
-            className={`flex-1 rounded-lg border px-3 py-1.5 text-sm font-medium ${
+            className={`flex-1 rounded-lg border px-2 py-1.5 text-sm font-medium ${
               modo === 'entrada'
                 ? 'border-marca bg-marca-suave text-marca'
                 : 'border-borde text-tinta-suave'
@@ -128,7 +129,7 @@ export function AccionesStock({
           <button
             type="button"
             onClick={() => setModo('ajuste')}
-            className={`flex-1 rounded-lg border px-3 py-1.5 text-sm font-medium ${
+            className={`flex-1 rounded-lg border px-2 py-1.5 text-sm font-medium ${
               modo === 'ajuste'
                 ? 'border-marca bg-marca-suave text-marca'
                 : 'border-borde text-tinta-suave'
@@ -138,8 +139,19 @@ export function AccionesStock({
           </button>
           <button
             type="button"
+            onClick={() => setModo('fotos')}
+            className={`flex-1 rounded-lg border px-2 py-1.5 text-sm font-medium ${
+              modo === 'fotos'
+                ? 'border-marca bg-marca-suave text-marca'
+                : 'border-borde text-tinta-suave'
+            }`}
+          >
+            Fotos
+          </button>
+          <button
+            type="button"
             onClick={() => setModo('retirar')}
-            className={`flex-1 rounded-lg border px-3 py-1.5 text-sm font-medium ${
+            className={`flex-1 rounded-lg border px-2 py-1.5 text-sm font-medium ${
               modo === 'retirar'
                 ? 'border-marca bg-marca-suave text-marca'
                 : 'border-borde text-tinta-suave'
@@ -149,7 +161,15 @@ export function AccionesStock({
           </button>
         </div>
 
-        {modo === 'retirar' ? (
+        {modo === 'fotos' ? (
+          <>
+            <p className="mt-3 text-xs text-tinta-tenue">
+              Las fotos son de «{nombreProducto}» entera, no solo de esta talla. Asigna cada una a
+              su color si la prenda viene en varios.
+            </p>
+            <GestorFotos productId={productId} onGuardado={cerrar} onCancelar={cerrar} />
+          </>
+        ) : modo === 'retirar' ? (
           <div className="mt-4 space-y-3">
             <p className="text-sm text-tinta-suave">
               Retirar no borra nada. La prenda sale del inventario y del punto de venta, pero sus
